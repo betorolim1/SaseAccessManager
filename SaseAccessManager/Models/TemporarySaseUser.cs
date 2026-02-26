@@ -9,18 +9,22 @@
 
     public class TemporarySaseUser
     {
-        public Guid Id { get; set; } = Guid.NewGuid();
+        public string Id { get; set; }
 
-        public string Email { get; set; }
-        public string? Name { get; set; }
+        public string Email { get; set; } = default!;
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public string Name { get; set; } = default!;
+        public string? LastName { get; set; }
+
+        public DateTime CreatedAt { get; set; }
         public DateTime ExpiresAt { get; set; }
 
-        public UserStatus Status { get; set; } = UserStatus.Active;
+        public UserStatus Status { get; set; }
 
         public string? SaseUserId { get; set; }
+
         public DateTime? LastRemovalAttempt { get; set; }
+
         public string? ErrorMessage { get; set; }
     }
 }

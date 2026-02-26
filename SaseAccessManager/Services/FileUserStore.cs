@@ -24,8 +24,17 @@ namespace SaseAccessManager.Services
             await _lock.WaitAsync();
             try
             {
+                if (!File.Exists(_path))
+                    return new List<TemporarySaseUser>(); 
+
                 var json = await File.ReadAllTextAsync(_path);
-                return JsonSerializer.Deserialize<List<TemporarySaseUser>>(json)!;
+
+                if (string.IsNullOrWhiteSpace(json))
+                    return new List<TemporarySaseUser>();
+
+                var users = JsonSerializer.Deserialize<List<TemporarySaseUser>>(json);
+
+                return users ?? new List<TemporarySaseUser>();
             }
             finally
             {

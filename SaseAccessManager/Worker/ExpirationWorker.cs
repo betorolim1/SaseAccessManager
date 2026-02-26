@@ -39,7 +39,7 @@ namespace SaseAccessManager.Worker
 
                     if (expired.Count == 0)
                     {
-                        _logger.LogInformation("Nenhum usuário expirado encontrado.");
+                        _logger.LogInformation("Nenhum usuário expirado para remover da lista hoje.");
                     }
                     else
                     {
