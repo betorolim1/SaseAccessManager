@@ -16,34 +16,35 @@ namespace SaseAccessManager.Services
 
         public async Task<TemporarySaseUser> Create(string email, string? name, string? lastName, int durationDays)
         {
-            var request = new SaseCreateUserRequest
-            {
-                Email = email,
-                ProfileData = new SaseProfileData
-                {
-                    FirstName = name ?? "",
-                    LastName = lastName ?? "",
-                    RoleName = "Member"
-                }
-            };
+            var users = await _store.GetAll();
 
-            var result = await _sase.CreateUser(request);
+            var alreadyActive = users.Any(u =>
+               u.Email.Equals(email, StringComparison.OrdinalIgnoreCase) &&
+               u.Status == UserStatus.Active);
 
-            if (!result.Success)
-                throw new Exception(result.Error);
+            if (alreadyActive)
+                throw new InvalidOperationException("Já existe um usuário ativo com este e-mail.");
 
             var user = new TemporarySaseUser
             {
                 Email = email,
                 Name = name,
                 LastName = lastName,
-                SaseUserId = result.UserId!,
                 CreatedAt = DateTime.UtcNow,
                 ExpiresAt = DateTime.UtcNow.AddDays(durationDays),
-                Id = result.UserId
+                Status = UserStatus.Active
             };
 
-            var users = await _store.GetAll();
+            var request = BuildSaseRequest(user);
+
+            var result = await _sase.CreateUser(request);
+
+            if (!result.Success)
+                throw new Exception(result.Error);
+
+            user.SaseUserId = result.UserId!;
+            user.Id = result.UserId;
+
             users.Add(user);
             await _store.SaveAll(users);
 

@@ -1,0 +1,146 @@
+﻿@page
+@model SaseAccessManager.Pages.Users.CreateModel
+
+<style>
+    .form-card {
+        max-width: 520px;
+        background: white;
+        padding: 22px;
+        border-radius: 10px;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+
+    .form-group {
+        margin-bottom: 18px;
+    }
+
+    .form-label {
+        font-weight: 600;
+        display: block;
+        margin-bottom: 6px;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 6px;
+        border: 1px solid #d1d5db;
+        font-size: 14px;
+        box-sizing: border-box;
+    }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 2px rgba(37,99,235,0.15);
+        }
+
+    .validation {
+        color: #b91c1c;
+        font-size: 13px;
+        margin-top: 4px;
+        display: block;
+    }
+
+    .alert-error {
+        background: #fee2e2;
+        color: #991b1b;
+        padding: 10px 12px;
+        border-radius: 6px;
+        margin-bottom: 15px;
+        font-weight: 600;
+    }
+
+    .form-actions {
+        margin-top: 20px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .btn {
+        display: inline-block;
+        padding: 8px 14px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: 600;
+        border: 1px solid transparent;
+        cursor: pointer;
+        font-size: 14px;
+    }
+
+    .btn-primary {
+        background-color: #2563eb;
+        color: white;
+    }
+
+        .btn-primary:hover {
+            background-color: #1d4ed8;
+        }
+
+    .btn-secondary {
+        background-color: #f3f4f6;
+        color: #374151;
+        border: 1px solid #d1d5db;
+    }
+
+        .btn-secondary:hover {
+            background-color: #e5e7eb;
+        }
+
+    .form-actions .btn {
+        min-width: 130px;
+        text-align: center;
+    }
+</style>
+
+<h2>Criar usuário temporário</h2>
+
+<div class="form-card">
+
+    @if (!string.IsNullOrEmpty(Model.Message))
+    {
+        <div class="alert-error">
+            @Model.Message
+        </div>
+    }
+
+    <div asp-validation-summary="All" class="validation"></div>
+
+    <form method="post">
+
+        <div class="form-group">
+            <label asp-for="Email" class="form-label"></label>
+            <input asp-for="Email" class="form-input" />
+            <span asp-validation-for="Email" class="validation"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Name" class="form-label"></label>
+            <input asp-for="Name" class="form-input" />
+            <span asp-validation-for="Name" class="validation"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="LastName" class="form-label"></label>
+            <input asp-for="LastName" class="form-input" />
+            <span asp-validation-for="LastName" class="validation"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="DurationDays" class="form-label"></label>
+            <input asp-for="DurationDays" type="number" class="form-input" />
+            <span asp-validation-for="DurationDays" class="validation"></span>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Criar usuário</button>
+            <a href="/Users" class="btn btn-secondary">Cancelar</a>
+        </div>
+
+    </form>
+</div>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

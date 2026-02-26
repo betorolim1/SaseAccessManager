@@ -4,7 +4,7 @@ using SaseAccessManager.Services;
 namespace SaseAccessManager.Controllers
 {
     [ApiController]
-    [Route("users")]
+    [Route("api/users")]
     public class UsersController : ControllerBase
     {
         private readonly UserService _service;
