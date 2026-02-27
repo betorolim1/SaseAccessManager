@@ -1,5 +1,6 @@
 ﻿using SaseAccessManager.DTOs;
 using SaseAccessManager.Models;
+using SaseAccessManager.Results;
 
 namespace SaseAccessManager.Services
 {
@@ -14,19 +15,22 @@ namespace SaseAccessManager.Services
             _sase = sase;
         }
 
-        public async Task<TemporarySaseUser> Create(string email, string? name, string? lastName, int durationDays)
+        public async Task<OperationResult<TemporarySaseUser>> Create(
+            string email, string? name, string? lastName, int durationDays)
         {
             var users = await _store.GetAll();
 
             var alreadyActive = users.Any(u =>
-               u.Email.Equals(email, StringComparison.OrdinalIgnoreCase) &&
-               u.Status == UserStatus.Active);
+                u.Email.Equals(email, StringComparison.OrdinalIgnoreCase) &&
+                u.Status == UserStatus.Active);
 
             if (alreadyActive)
-                throw new InvalidOperationException("Já existe um usuário ativo com este e-mail.");
+                return OperationResult<TemporarySaseUser>
+                    .Fail("Já existe um usuário ativo com este e-mail.");
 
             var user = new TemporarySaseUser
             {
+                Id = Guid.NewGuid().ToString(),
                 Email = email,
                 Name = name,
                 LastName = lastName,
@@ -36,34 +40,33 @@ namespace SaseAccessManager.Services
             };
 
             var request = BuildSaseRequest(user);
-
             var result = await _sase.CreateUser(request);
 
             if (!result.Success)
-                throw new Exception(result.Error);
+                return OperationResult<TemporarySaseUser>
+                    .Fail($"Erro ao criar usuário no SASE: {result.Error}");
 
             user.SaseUserId = result.UserId!;
-            user.Id = result.UserId;
 
             users.Add(user);
             await _store.SaveAll(users);
 
-            return user;
+            return OperationResult<TemporarySaseUser>.Ok(user);
         }
 
         public async Task<List<TemporarySaseUser>> List()
             => await _store.GetAll();
 
-        public async Task<bool> Remove(string id)
+        public async Task<OperationResult> Remove(string id)
         {
             var users = await _store.GetAll();
 
             var user = users.FirstOrDefault(x => x.Id == id);
             if (user == null)
-                return false;
+                return OperationResult.Fail("Usuário não encontrado.");
 
             if (user.Status == UserStatus.Removed)
-                return true;
+                return OperationResult.Ok();
 
             var result = await _sase.DeleteUser(user.SaseUserId!);
 
@@ -81,7 +84,10 @@ namespace SaseAccessManager.Services
             }
 
             await _store.SaveAll(users);
-            return result.Success;
+
+            return result.Success
+                ? OperationResult.Ok()
+                : OperationResult.Fail(result.Error ?? "Erro ao remover usuário.");
         }
 
         private static SaseCreateUserRequest BuildSaseRequest(TemporarySaseUser user)

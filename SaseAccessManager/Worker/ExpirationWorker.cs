@@ -68,20 +68,24 @@ namespace SaseAccessManager.Worker
 
             var users = await store.GetAll();
 
-            var before = users.Count;
+            var toDelete = users
+                .Where(u =>
+                    u.Status == UserStatus.Removed &&
+                    u.LastRemovalAttempt.HasValue &&
+                    u.LastRemovalAttempt.Value < limitDate)
+                .ToList();
 
-            users = users.Where(u =>
-                u.Status != UserStatus.Removed ||
-                (u.LastRemovalAttempt != null && u.LastRemovalAttempt >= limitDate)
-            ).ToList();
-
-            var removed = before - users.Count;
-
-            if (removed > 0)
+            if (toDelete.Count == 0)
             {
-                _logger.LogInformation($"Limpando {removed} usuários antigos do JSON.");
-                await store.SaveAll(users);
+                _logger.LogInformation("Nenhum usuário antigo para limpar.");
+                return;
             }
+
+            _logger.LogInformation("Removendo {Count} usuários antigos do JSON.", toDelete.Count);
+
+            var remaining = users.Except(toDelete).ToList();
+
+            await store.SaveAll(remaining);
         }
 
         private async Task WaitUntilNextRun(CancellationToken token)

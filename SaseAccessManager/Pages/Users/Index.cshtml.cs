@@ -1,7 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc.RazorPages;
+﻿using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using SaseAccessManager.Models;
 using SaseAccessManager.Services;
-using Microsoft.AspNetCore.Mvc;
 
 namespace SaseAccessManager.Pages.Users;
 
@@ -9,6 +10,9 @@ public class IndexModel : PageModel
 {
     private readonly FileUserStore _store;
     private readonly UserService _service;
+
+    [TempData]
+    public string? ErrorMessage { get; set; }
 
     public List<TemporarySaseUser> Users { get; set; } = new();
 
@@ -20,14 +24,27 @@ public class IndexModel : PageModel
 
     public async Task OnGet()
     {
-        Users = (await _store.GetAll())
-        .OrderByDescending(u => u.CreatedAt)
-        .ToList();
+        await LoadUsers();
     }
 
     public async Task<IActionResult> OnPostRemove(string id)
     {
-        await _service.Remove(id);
+        var result = await _service.Remove(id);
+
+        if (!result.Success)
+        {
+            ModelState.AddModelError(string.Empty, result.Error!);
+            ErrorMessage = result.Error;
+            await LoadUsers();
+        }
+
         return RedirectToPage();
+    }
+
+    private async Task LoadUsers()
+    {
+        Users = (await _store.GetAll())
+        .OrderByDescending(u => u.CreatedAt)
+        .ToList();
     }
 }

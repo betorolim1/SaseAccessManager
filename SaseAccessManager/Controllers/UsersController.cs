@@ -24,8 +24,12 @@ namespace SaseAccessManager.Controllers
         [HttpPost]
         public async Task<IActionResult> Create(CreateUserRequest req)
         {
-            var user = await _service.Create(req.Email, req.Name, req.LastName, req.DurationDays);
-            return Ok(user);
+            var result = await _service.Create(req.Email, req.Name, req.LastName, req.DurationDays);
+
+            if (!result.Success)
+                return BadRequest(new { error = result.Error });
+
+            return Ok(result.Data);
         }
 
         [HttpGet]
@@ -35,10 +39,10 @@ namespace SaseAccessManager.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(string id)
         {
-            var success = await _service.Remove(id);
+            var result = await _service.Remove(id);
 
-            if (!success)
-                return NotFound();
+            if (!result.Success)
+                return NotFound(new { error = result.Error });
 
             return Ok(new { message = "Usuário removido/processado" });
         }

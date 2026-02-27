@@ -39,15 +39,14 @@ public class CreateModel : PageModel
         if (!ModelState.IsValid)
             return Page();
 
-        try
+        var result = await _service.Create(Email, Name, LastName, DurationDays);
+
+        if (!result.Success)
         {
-            await _service.Create(Email, Name, LastName, DurationDays);
-            return RedirectToPage("/Users/Index");
-        }
-        catch (InvalidOperationException ex)
-        {
-            ModelState.AddModelError(string.Empty, ex.Message);
+            ModelState.AddModelError(string.Empty, result.Error!);
             return Page();
         }
+
+        return RedirectToPage("/Users/Index");
     }
 }
