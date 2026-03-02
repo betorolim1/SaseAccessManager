@@ -9,6 +9,15 @@ namespace SaseAccessManager.Services
         private readonly FileUserStore _store;
         private readonly ISaseClient _sase;
 
+        private static readonly HashSet<string> AzureDomains = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "agro.gov.br",
+            "inmet.gov.br",
+            "mpa.gov.br",
+            "mda.gov.br",
+            "apoio.agro.gov.br"
+        };
+
         public UserService(FileUserStore store, ISaseClient sase)
         {
             _store = store;
@@ -16,7 +25,7 @@ namespace SaseAccessManager.Services
         }
 
         public async Task<OperationResult<TemporarySaseUser>> Create(
-            string email, string? name, string? lastName, int durationDays)
+            string email, string? name, string? lastName, int durationDays, List<string> accessGroups)
         {
             var users = await _store.GetAll();
 
@@ -36,7 +45,8 @@ namespace SaseAccessManager.Services
                 LastName = lastName,
                 CreatedAt = DateTime.UtcNow,
                 ExpiresAt = DateTime.UtcNow.AddDays(durationDays),
-                Status = UserStatus.Active
+                Status = UserStatus.Active,
+                AccessGroups = accessGroups
             };
 
             var request = BuildSaseRequest(user);
@@ -92,8 +102,14 @@ namespace SaseAccessManager.Services
 
         private static SaseCreateUserRequest BuildSaseRequest(TemporarySaseUser user)
         {
+
+            var isGov = IsGovEmail(user.Email);
+
             return new SaseCreateUserRequest
             {
+                AccessGroups = user.AccessGroups,
+                IdpType = isGov ? "azureAD" : "database",
+                EmailVerified = isGov,
                 Email = user.Email,
                 ProfileData = new SaseProfileData
                 {
@@ -102,6 +118,17 @@ namespace SaseAccessManager.Services
                     RoleName = "Member"
                 }
             };
+        }
+
+        private static bool IsGovEmail(string email)
+        {
+            var at = email.LastIndexOf('@');
+            if (at < 0)
+                return false;
+
+            var domain = email[(at + 1)..].Trim();
+
+            return AzureDomains.Contains(domain);
         }
     }
 }

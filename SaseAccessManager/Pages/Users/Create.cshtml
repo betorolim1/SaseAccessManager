@@ -134,6 +134,24 @@
             <span asp-validation-for="DurationDays" class="validation"></span>
         </div>
 
+        <div class="form-group">
+            <label>Grupos de acesso</label>
+
+            @foreach (var g in Model.AvailableGroups)
+            {
+                <div class="form-check">
+                    <input class="form-check-input"
+                           type="checkbox"
+                           name="SelectedGroups"
+                           value="@g.Name" />
+
+                    <label class="form-check-label">
+                        @g.Name
+                    </label>
+                </div>
+            }
+        </div>
+
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">Criar usuário</button>
             <a href="/Users" class="btn btn-secondary">Cancelar</a>

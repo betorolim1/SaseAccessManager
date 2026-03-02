@@ -18,13 +18,14 @@ namespace SaseAccessManager.Controllers
             string Email,
             string Name,
             string? LastName,
-            int DurationDays
+            int DurationDays,
+            List<string> accessGroups
         );
 
         [HttpPost]
         public async Task<IActionResult> Create(CreateUserRequest req)
         {
-            var result = await _service.Create(req.Email, req.Name, req.LastName, req.DurationDays);
+            var result = await _service.Create(req.Email, req.Name, req.LastName, req.DurationDays, req.accessGroups);
 
             if (!result.Success)
                 return BadRequest(new { error = result.Error });

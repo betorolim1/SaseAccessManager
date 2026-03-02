@@ -26,5 +26,7 @@
         public DateTime? LastRemovalAttempt { get; set; }
 
         public string? ErrorMessage { get; set; }
+
+        public List<string> AccessGroups { get; set; } = [];
     }
 }

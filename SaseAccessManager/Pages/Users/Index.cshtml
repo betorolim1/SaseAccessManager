@@ -219,6 +219,7 @@
             <tr>
                 <th>Email</th>
                 <th>Nome</th>
+                <th>Criado em </th>
                 <th>Expira em </th>
                 <th>Status</th>
                 <th>Ações</th>
@@ -230,6 +231,7 @@
                 <tr class="@RowClass(u.Status)">
                     <td>@u.Email</td>
                     <td>@u.Name @u.LastName</td>
+                    <td>@u.CreatedAt.ToLocalTime()</td>
                     <td>
                         @{
                             var remaining = u.ExpiresAt - DateTime.UtcNow;

@@ -2,13 +2,13 @@
 {
     public class SaseCreateUserRequest
     {
-        public string IdpType { get; set; } = "database";
+        public string IdpType { get; set; } = default!;
 
-        public List<string> AccessGroups { get; set; } = ["All Users"];
+        public List<string> AccessGroups { get; set; } = default!;
 
         public string Email { get; set; } = default!;
 
-        public bool EmailVerified { get; set; } = true;
+        public bool EmailVerified { get; set; } = default;
 
         public string InviteMessage { get; set; } = "Conta criada automaticamente via API";
 
