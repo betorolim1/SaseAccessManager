@@ -184,6 +184,21 @@
             background: #dc2626;
         }
 
+    .table tbody tr:nth-child(even) {
+        background: #fafafa;
+    }
+
+    .actions {
+        display: flex;
+        gap: 6px;
+        justify-content: center;
+    }
+
+    .table tbody tr:hover {
+        background: #eef2ff;
+        transition: background 0.15s;
+    }
+
     @@keyframes fadeIn {
         from {
             opacity: 0;
@@ -217,7 +232,7 @@
 
     <div class="page-actions">
         <button class="btn btn-secondary" onclick="this.innerText='Atualizando...'; location.reload();">
-            ⟳ Atualizar página
+            ⟳ Atualizar
         </button>
     </div>
 </div>
@@ -273,7 +288,7 @@
                 <tr class="@RowClass(u.Status)">
                     <td>@u.Email</td>
                     <td>@u.Name @u.LastName</td>
-                    <td>@u.CreatedAt.ToLocalTime()</td>
+                    <td>@u.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
                     <td>
                         @if (u.Status == UserStatus.Removed)
                         {
@@ -299,27 +314,35 @@
                     </td>
                     <td>
                         <span class="@StatusBadge(u.Status)">
-                            @u.Status
+                            @(u.Status switch
+                            {
+                                UserStatus.Active => "Ativo",
+                                UserStatus.Error => "Erro",
+                                UserStatus.Removed => "Removido",
+                                _ => u.Status.ToString()
+                            })
                         </span>
                     </td>
                     <td>
-                        @if (u.Status != UserStatus.Removed)
-                        {
-                            <form method="post" asp-page-handler="Remove" style="display:inline">
-                                <input type="hidden" name="id" value="@u.Id" />
-                                <button type="submit"
-                                        class="btn btn-danger"
-                                        onclick="return confirm('Remover acesso de @u.Email ?')">
-                                    Remover
-                                </button>
-                            </form>
+                        <div class="actions">
+                            @if (u.Status != UserStatus.Removed)
+                            {
+                                <form method="post" asp-page-handler="Remove" style="display:inline">
+                                    <input type="hidden" name="id" value="@u.Id" />
+                                    <button type="submit"
+                                            class="btn btn-danger"
+                                            onclick="return confirm('Remover acesso de @u.Email ?')">
+                                        Remover
+                                    </button>
+                                </form>
 
-                            <a asp-page="/Users/Create"
-                               asp-route-id="@u.Id"
-                               class="btn btn-secondary">
-                                Editar grupos
-                            </a>
-                        }
+                                <a asp-page="/Users/Create"
+                                   asp-route-id="@u.Id"
+                                   class="btn btn-secondary">
+                                    Editar grupos
+                                </a>
+                            }
+                        </div>
                     </td>
                 </tr>
             }

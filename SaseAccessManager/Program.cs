@@ -1,4 +1,6 @@
 using Microsoft.Extensions.Options;
+using Microsoft.Identity.Web;
+using Microsoft.Identity.Web.UI;
 using SaseAccessManager.Auth;
 using SaseAccessManager.Cache;
 using SaseAccessManager.Options;
@@ -37,12 +39,26 @@ builder.Services.AddScoped<UserService>();
 
 builder.Services.AddHostedService<ExpirationWorker>();
 
-builder.Services.AddRazorPages();
+//builder.Services.AddAuthentication("OpenIdConnect")
+//    .AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd"));
+
+//builder.Services.AddAuthorization();
+
+builder.Services.AddRazorPages(options =>
+{
+    //options.Conventions.AuthorizeFolder("/");
+});
+    //.AddMicrosoftIdentityUI();
 
 var app = builder.Build();
 
 app.UseSwagger();
 app.UseSwaggerUI();
+
+app.UseHttpsRedirection();
+
+//app.UseAuthentication();
+//app.UseAuthorization();
 
 app.MapControllers();
 
