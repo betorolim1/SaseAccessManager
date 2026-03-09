@@ -93,9 +93,62 @@
         min-width: 130px;
         text-align: center;
     }
+
+    .toast {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 14px 18px;
+        border-radius: 8px;
+        color: white;
+        font-weight: 600;
+        box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+        z-index: 9999;
+        animation: fadeIn 0.3s ease;
+    }
+
+        .toast.success {
+            background: #16a34a;
+        }
+
+        .toast.error {
+            background: #dc2626;
+        }
+
+        .btn-primary:disabled {
+            background-color: #9ca3af;
+            border-color: #9ca3af;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .btn-primary:disabled:hover {
+            background-color: #9ca3af;
+        }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
 </style>
 
 <h2>Criar usuário temporário</h2>
+
+@if (TempData["ToastMessage"] != null)
+{
+    <div id="toast"
+         class="toast @(TempData["ToastType"])">
+
+        @TempData["ToastMessage"]
+    </div>
+}
 
 <div class="form-card">
 
@@ -110,40 +163,56 @@
 
     <form method="post">
 
+        <input type="hidden" asp-for="IsEdit" value="@Model.IsEdit" />
+
         <div class="form-group">
             <label asp-for="Email" class="form-label"></label>
-            <input asp-for="Email" class="form-input" />
+            <input asp-for="Email" class="form-input" readonly="@Model.IsEdit" />
             <span asp-validation-for="Email" class="validation"></span>
         </div>
 
         <div class="form-group">
             <label asp-for="Name" class="form-label"></label>
-            <input asp-for="Name" class="form-input" />
+            <input asp-for="Name" class="form-input" readonly="@Model.IsEdit" />
             <span asp-validation-for="Name" class="validation"></span>
         </div>
 
         <div class="form-group">
             <label asp-for="LastName" class="form-label"></label>
-            <input asp-for="LastName" class="form-input" />
+            <input asp-for="LastName" class="form-input" readonly="@Model.IsEdit" />
             <span asp-validation-for="LastName" class="validation"></span>
         </div>
 
         <div class="form-group">
             <label asp-for="DurationDays" class="form-label"></label>
-            <input asp-for="DurationDays" type="number" class="form-input" />
+            <input asp-for="DurationDays" type="number" class="form-input" readonly="@Model.IsEdit" />
             <span asp-validation-for="DurationDays" class="validation"></span>
         </div>
 
         <div class="form-group">
             <label>Grupos de acesso</label>
 
+            <div class="form-check">
+                <input class="form-check-input"
+                       type="checkbox"
+                       checked
+                       disabled />
+
+                <label class="form-check-label">
+                    All Users (sempre incluído)
+                </label>
+            </div>
+
             @foreach (var g in Model.AvailableGroups)
             {
-                <div class="form-check">
-                    <input class="form-check-input"
+                var isChecked = Model.SelectedGroups.Contains(g.Id);
+
+                <div class="form-check-input">
+                    <input class="form-check-input group-checkbox"
                            type="checkbox"
                            name="SelectedGroups"
-                           value="@g.Name" />
+                           value="@g.Id"
+                           @(isChecked ? "checked" : "") />
 
                     <label class="form-check-label">
                         @g.Name
@@ -153,7 +222,12 @@
         </div>
 
         <div class="form-actions">
-            <button type="submit" class="btn btn-primary">Criar usuário</button>
+            <button id="submitBtn"
+                    type="submit"
+                    class="btn btn-primary"
+                    disabled="@(Model.IsEdit)">
+                @(Model.IsEdit ? "Atualizar grupos" : "Criar usuário")
+            </button>
             <a href="/Users" class="btn btn-secondary">Cancelar</a>
         </div>
 
@@ -162,3 +236,39 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
 }
+
+<script>
+    setTimeout(() => {
+        const toast = document.getElementById("toast");
+        if (toast) {
+            toast.style.opacity = "0";
+            setTimeout(() => toast.remove(), 400);
+        }
+    }, 4000);
+
+        document.addEventListener("DOMContentLoaded", function () {
+
+        const isEdit = '@Model.IsEdit'.toLowerCase() === 'true';
+
+        if (!isEdit) return;
+
+        const checkboxes = document.querySelectorAll(".group-checkbox");
+        const submitBtn = document.getElementById("submitBtn");
+
+        const originalState = Array.from(checkboxes).map(cb => cb.checked);
+
+        function checkChanges() {
+
+            const currentState = Array.from(checkboxes).map(cb => cb.checked);
+
+            const changed = currentState.some((v, i) => v !== originalState[i]);
+
+            submitBtn.disabled = !changed;
+        }
+
+        checkboxes.forEach(cb => {
+            cb.addEventListener("change", checkChanges);
+        });
+
+    });
+</script>

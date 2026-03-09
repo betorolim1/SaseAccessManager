@@ -27,7 +27,15 @@ namespace SaseAccessManager.Services
         public async Task<OperationResult<TemporarySaseUser>> Create(
             string email, string? name, string? lastName, int durationDays, List<string> accessGroups)
         {
+            accessGroups = accessGroups
+                .Where(g => !string.IsNullOrWhiteSpace(g) && g != "All Users")
+                .Select(g => g.Trim())
+                .Distinct()
+                .ToList();
+
             var users = await _store.GetAll();
+
+            email = email.Trim().ToLowerInvariant();
 
             var alreadyActive = users.Any(u =>
                 u.Email.Equals(email, StringComparison.OrdinalIgnoreCase) &&
@@ -55,6 +63,19 @@ namespace SaseAccessManager.Services
             if (!result.Success)
                 return OperationResult<TemporarySaseUser>
                     .Fail($"Erro ao criar usuário no SASE: {result.Error}");
+
+            var userId = result.UserId!;
+
+            foreach (var groupId in accessGroups)
+            {
+                var add = await _sase.AddUserToGroup(groupId, userId);
+
+                if (!add.Success)
+                {
+                    return OperationResult<TemporarySaseUser>
+                        .Fail($"Erro ao adicionar usuário ao grupo no SASE: {add.Error}");
+                }
+            }
 
             user.SaseUserId = result.UserId!;
 
@@ -100,6 +121,35 @@ namespace SaseAccessManager.Services
                 : OperationResult.Fail(result.Error ?? "Erro ao remover usuário.");
         }
 
+        public async Task<OperationResult> UpdateGroups(string email, List<string> newGroups)
+        {
+            var users = await _store.GetAll();
+
+            var user = users.FirstOrDefault(u =>
+                u.Email.Equals(email, StringComparison.OrdinalIgnoreCase) &&
+                u.Status == UserStatus.Active);
+
+            if (user == null)
+                return OperationResult.Fail("Usuário não encontrado.");
+
+            var current = user.AccessGroups ?? [];
+
+            var toAdd = newGroups.Except(current).ToList();
+            var toRemove = current.Except(newGroups).ToList();
+
+            foreach (var g in toAdd)
+                await _sase.AddUserToGroup(g, user.SaseUserId!);
+
+            foreach (var g in toRemove)
+                await _sase.RemoveUserFromGroup(g, user.SaseUserId!);
+
+            user.AccessGroups = newGroups;
+
+            await _store.SaveAll(users);
+
+            return OperationResult.Ok();
+        }
+
         private static SaseCreateUserRequest BuildSaseRequest(TemporarySaseUser user)
         {
 
@@ -107,7 +157,6 @@ namespace SaseAccessManager.Services
 
             return new SaseCreateUserRequest
             {
-                AccessGroups = user.AccessGroups,
                 IdpType = isGov ? "azureAD" : "database",
                 EmailVerified = isGov,
                 Email = user.Email,

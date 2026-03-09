@@ -23,9 +23,12 @@ public class HttpSaseClient : ISaseClient
         {
             var body = new SaseCreateUserRequest
             {
-                AccessGroups = request.AccessGroups,
                 IdpType = request.IdpType,
                 Email = request.Email,
+                AccessGroups = request.AccessGroups,
+                EmailVerified = request.EmailVerified,
+                InviteMessage = request.InviteMessage,
+                Origin = request.Origin,
                 ProfileData = new SaseProfileData
                 {
                     FirstName = request.ProfileData.FirstName,
@@ -35,7 +38,12 @@ public class HttpSaseClient : ISaseClient
 
             var httpRequest = new HttpRequestMessage(HttpMethod.Post, "users")
             {
-                Content = JsonContent.Create(body)
+                Content = JsonContent.Create(
+                    body,
+                    options: new JsonSerializerOptions
+                    {
+                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                    })
             };
 
             var response = await SendAsync(httpRequest, CancellationToken.None);
@@ -108,6 +116,53 @@ public class HttpSaseClient : ISaseClient
         catch
         {
             return [];
+        }
+    }
+
+    public async Task<(bool Success, string? Error)> AddUserToGroup(string groupId, string userId)
+    {
+        try
+        {
+            var request = new HttpRequestMessage(
+                HttpMethod.Post,
+                $"groups/{groupId}/member/{userId}");
+
+            var response = await SendAsync(request, CancellationToken.None);
+
+            if (response.IsSuccessStatusCode)
+                return (true, null);
+
+            var content = await response.Content.ReadAsStringAsync();
+
+            return (false, $"HTTP {(int)response.StatusCode}: {content}");
+        }
+        catch (Exception ex)
+        {
+            return (false, ex.Message);
+        }
+    }
+
+    public async Task<(bool Success, string? Error)> RemoveUserFromGroup(string groupId, string userId)
+    {
+        try
+        {
+            var request = new HttpRequestMessage(
+                HttpMethod.Delete,
+                $"groups/{groupId}/member/{userId}");
+
+            var response = await SendAsync(request, CancellationToken.None);
+
+            if (response.IsSuccessStatusCode ||
+                response.StatusCode == HttpStatusCode.NotFound)
+                return (true, null);
+
+            var content = await response.Content.ReadAsStringAsync();
+
+            return (false, $"HTTP {(int)response.StatusCode}: {content}");
+        }
+        catch (Exception ex)
+        {
+            return (false, ex.Message);
         }
     }
 

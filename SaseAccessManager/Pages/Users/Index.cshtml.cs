@@ -14,6 +14,12 @@ public class IndexModel : PageModel
     [TempData]
     public string? ErrorMessage { get; set; }
 
+    [TempData]
+    public string? ToastMessage { get; set; }
+
+    [TempData]
+    public string? ToastType { get; set; }
+
     public List<TemporarySaseUser> Users { get; set; } = new();
 
     public IndexModel(FileUserStore store, UserService service)
@@ -35,8 +41,15 @@ public class IndexModel : PageModel
         {
             ModelState.AddModelError(string.Empty, result.Error!);
             ErrorMessage = result.Error;
+
+            ToastMessage = result.Error;
+            ToastType = "error";
+
             await LoadUsers();
         }
+
+        ToastMessage = "Usuário removido com sucesso.";
+        ToastType = "success";
 
         return RedirectToPage();
     }

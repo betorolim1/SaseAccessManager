@@ -27,7 +27,9 @@ namespace SaseAccessManager.Cache
                 if (_cache != null && DateTime.UtcNow < _expires)
                     return _cache;
 
-                var groups = (await _client.GetGroupsAsync(CancellationToken.None)).ToList();
+                var groups = (await _client.GetGroupsAsync(CancellationToken.None))
+                    .Where(g => !string.Equals(g.Name, "All Users", StringComparison.OrdinalIgnoreCase))
+                    .ToList();
 
                 if (groups.Count > 0)
                 {

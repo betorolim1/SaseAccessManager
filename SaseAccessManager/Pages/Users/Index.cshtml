@@ -162,7 +162,49 @@
         margin-bottom: 15px;
         font-weight: 600;
     }
+
+    .toast {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 14px 18px;
+        border-radius: 8px;
+        color: white;
+        font-weight: 600;
+        box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+        z-index: 9999;
+        animation: fadeIn 0.3s ease;
+    }
+
+        .toast.success {
+            background: #16a34a;
+        }
+
+        .toast.error {
+            background: #dc2626;
+        }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
 </style>
+
+@if (TempData["ToastMessage"] != null)
+{
+    <div id="toast"
+         class="toast @(TempData["ToastType"])">
+
+        @TempData["ToastMessage"]
+    </div>
+}
 
 <div class="page-header">
     <h2>Usuários Temporários</h2>
@@ -233,7 +275,12 @@
                     <td>@u.Name @u.LastName</td>
                     <td>@u.CreatedAt.ToLocalTime()</td>
                     <td>
-                        @{
+                        @if (u.Status == UserStatus.Removed)
+                        {
+                            <span>-</span>
+                        }
+                        else
+                        {
                             var remaining = u.ExpiresAt - DateTime.UtcNow;
 
                             if (remaining.TotalSeconds <= 0)
@@ -266,6 +313,12 @@
                                     Remover
                                 </button>
                             </form>
+
+                            <a asp-page="/Users/Create"
+                               asp-route-id="@u.Id"
+                               class="btn btn-secondary">
+                                Editar grupos
+                            </a>
                         }
                     </td>
                 </tr>
@@ -273,3 +326,13 @@
         </tbody>
     </table>
 </div>
+
+<script>
+    setTimeout(() => {
+        const toast = document.getElementById("toast");
+        if (toast) {
+            toast.style.opacity = "0";
+            setTimeout(() => toast.remove(), 400);
+        }
+    }, 4000);
+</script>

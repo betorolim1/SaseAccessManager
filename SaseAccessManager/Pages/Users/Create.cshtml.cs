@@ -46,6 +46,15 @@ public class CreateModel : PageModel
 
     public IReadOnlyList<SaseGroupDto> AvailableGroups { get; private set; } = [];
 
+    [BindProperty]
+    public bool IsEdit { get; set; }
+
+    [TempData]
+    public string? ToastMessage { get; set; }
+
+    [TempData]
+    public string? ToastType { get; set; } // success | error
+
     public class InputModel
     {
         [Required, EmailAddress]
@@ -61,9 +70,30 @@ public class CreateModel : PageModel
         public DateTime ExpiresAt { get; set; }
     }
 
-    public async Task OnGet()
+    public async Task<IActionResult> OnGet(string? id)
     {
         AvailableGroups = await _groupCache.GetAsync();
+
+        if (string.IsNullOrWhiteSpace(id))
+            return Page();
+
+        var users = await _service.List();
+
+        var user = users.FirstOrDefault(u => u.Id == id);
+
+        if (user == null)
+            return RedirectToPage("/Users/Index");
+
+        Email = user.Email;
+        Name = user.Name ?? "";
+        LastName = user.LastName ?? "";
+        DurationDays = (int)(user.ExpiresAt - DateTime.UtcNow).TotalDays;
+
+        SelectedGroups = user.AccessGroups ?? [];
+
+        IsEdit = true;
+
+        return Page();
     }
 
     public async Task<IActionResult> OnPost()
@@ -73,17 +103,37 @@ public class CreateModel : PageModel
         if (!ModelState.IsValid)
             return Page();
 
-        if (SelectedGroups == null || SelectedGroups.Count == 0)
-            SelectedGroups = ["All Users"];
-
-        var result = await _service.Create(Email, Name, LastName, DurationDays, SelectedGroups);
-
-        if (!result.Success)
+        if (IsEdit)
         {
-            AvailableGroups = await _groupCache.GetAsync();
-            ModelState.AddModelError(string.Empty, result.Error!);
+            var result = await _service.UpdateGroups(Email, SelectedGroups);
+
+            if (!result.Success)
+            {
+                ModelState.AddModelError("", result.Error!);
+                return Page();
+            }
+
+            ToastMessage = "Grupos atualizados com sucesso.";
+            ToastType = "success";
+
+            return RedirectToPage("/Users/Index");
+        }
+
+        var create = await _service.Create(
+            Email,
+            Name,
+            LastName,
+            DurationDays,
+            SelectedGroups);
+
+        if (!create.Success)
+        {
+            ModelState.AddModelError("", create.Error!);
             return Page();
         }
+
+        ToastMessage = "Usuário criado com sucesso.";
+        ToastType = "success";
 
         return RedirectToPage("/Users/Index");
     }
