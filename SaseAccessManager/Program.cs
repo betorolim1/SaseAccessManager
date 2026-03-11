@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.Extensions.Options;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
@@ -39,26 +40,37 @@ builder.Services.AddScoped<UserService>();
 
 builder.Services.AddHostedService<ExpirationWorker>();
 
-//builder.Services.AddAuthentication("OpenIdConnect")
-//    .AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd"));
+builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
+    .AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd"));
 
-//builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.FallbackPolicy = options.DefaultPolicy;
+});
 
 builder.Services.AddRazorPages(options =>
 {
-    //options.Conventions.AuthorizeFolder("/");
-});
-    //.AddMicrosoftIdentityUI();
+    options.Conventions.AuthorizeFolder("/");
+})
+    .AddMicrosoftIdentityUI();
 
 var app = builder.Build();
+
+app.MapGet("/", context =>
+{
+    context.Response.Redirect("/Users/Index");
+    return Task.CompletedTask;
+});
 
 app.UseSwagger();
 app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
 
-//app.UseAuthentication();
-//app.UseAuthorization();
+app.UseCookiePolicy();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 

@@ -8,6 +8,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace SaseAccessManager.Pages.Users;
 
+[Authorize]
 public class CreateModel : PageModel
 {
     private readonly UserService _service;

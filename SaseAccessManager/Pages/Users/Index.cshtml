@@ -221,6 +221,16 @@
     </div>
 }
 
+<form method="post" asp-page-handler="Logout" style="display:inline">
+    <button type="submit" class="btn btn-secondary">
+        Sair
+    </button>
+</form>
+
+<div style="margin-bottom:10px;">
+    Usuário: <strong>@User.Identity?.Name</strong>
+</div>
+
 <div class="page-header">
     <h2>Usuários Temporários</h2>
 
