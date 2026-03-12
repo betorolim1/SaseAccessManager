@@ -1,4 +1,7 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using SaseAccessManager.Cache;
@@ -21,22 +24,26 @@ public class CreateModel : PageModel
     }
 
     [BindProperty]
+    [Display(Name = "Email")]
     [Required(ErrorMessage = "Email é obrigatório.")]
     [EmailAddress(ErrorMessage = "Formato de email inválido.")]
     public string Email { get; set; } = "";
 
     [BindProperty]
+    [Display(Name = "Nome")]
     [Required(ErrorMessage = "Nome é obrigatório.")]
     public string Name { get; set; } = "";
 
     [BindProperty]
+    [Display(Name = "Sobrenome")]
     [Required(ErrorMessage = "Sobrenome é obrigatório.")]
     public string LastName { get; set; } = "";
 
     [BindProperty]
+    [Display(Name = "Validade (dias)")]
     [Required(ErrorMessage = "Duração é obrigatória.")]
     [Range(1, 365, ErrorMessage = "Duração deve ser entre 1 e 365 dias.")]
-    public int DurationDays { get; set; } = 7;
+    public int DurationDays { get; set; } = 15;
 
     [BindProperty]
     public InputModel Input { get; set; } = new();
@@ -59,17 +66,33 @@ public class CreateModel : PageModel
 
     public class InputModel
     {
+        [Display(Name = "Email")]
         [Required, EmailAddress]
         public string Email { get; set; } = default!;
 
+        [Display(Name = "Nome")]
         [Required]
         public string Name { get; set; } = default!;
 
+        [Display(Name = "Sobrenome")]
         [Required]
         public string LastName { get; set; } = default!;
 
+        [Display(Name = "Expira em")]
         [Required]
         public DateTime ExpiresAt { get; set; }
+    }
+
+    public IActionResult OnPostLogout()
+    {
+        return SignOut(
+            new AuthenticationProperties
+            {
+                RedirectUri = "/"
+            },
+            CookieAuthenticationDefaults.AuthenticationScheme,
+            OpenIdConnectDefaults.AuthenticationScheme
+        );
     }
 
     public async Task<IActionResult> OnGet(string? id)

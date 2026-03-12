@@ -2,273 +2,837 @@
 @model SaseAccessManager.Pages.Users.CreateModel
 
 <style>
-    .form-card {
-        max-width: 520px;
-        background: white;
-        padding: 22px;
-        border-radius: 10px;
-        border: 1px solid #e5e7eb;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    *, *::before, *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
     }
 
-    .form-group {
+    :root {
+        --bg: #0b0f1a;
+        --surface: #111827;
+        --surface2: #1a2235;
+        --surface3: #202c42;
+        --border: rgba(255,255,255,0.07);
+        --border2: rgba(255,255,255,0.12);
+        --text: #e8edf5;
+        --muted: #6b7a99;
+        --accent: #4f8cff;
+        --accent2: #7c5cfc;
+        --green: #22d47a;
+        --red: #ff4d6a;
+        --radius: 12px;
+        --shadow: 0 8px 32px rgba(0,0,0,0.45);
+    }
+
+    body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: 'DM Sans', sans-serif;
+        min-height: 100vh;
+    }
+
+    /* ── TOP BAR ── */
+    .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 32px;
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+    }
+
+    .topbar-brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .brand-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        box-shadow: 0 0 20px rgba(79,140,255,0.35);
+    }
+
+    .brand-title {
+        font-family: 'Syne', sans-serif;
+        font-size: 16px;
+        font-weight: 700;
+        letter-spacing: .02em;
+    }
+
+    .brand-sub {
+        font-size: 11px;
+        color: var(--muted);
+        letter-spacing: .06em;
+        text-transform: uppercase;
+    }
+
+    .topbar-right {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .session-pill {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--surface2);
+        border: 1px solid var(--border2);
+        border-radius: 999px;
+        padding: 6px 14px 6px 8px;
+        font-size: 13px;
+        color: var(--muted);
+    }
+
+    .avatar {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 700;
+        color: white;
+    }
+
+    .session-pill strong {
+        color: var(--text);
+        font-weight: 500;
+    }
+
+    /* ── MAIN ── */
+    .main {
+        max-width: 640px;
+        margin: 0 auto;
+        padding: 40px 24px;
+    }
+
+    /* ── BREADCRUMB ── */
+    .breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: var(--muted);
+        margin-bottom: 24px;
+    }
+
+        .breadcrumb a {
+            color: var(--muted);
+            text-decoration: none;
+            transition: color .15s;
+        }
+
+            .breadcrumb a:hover {
+                color: var(--text);
+            }
+
+    .breadcrumb-sep {
+        opacity: .4;
+    }
+
+    .breadcrumb-current {
+        color: var(--text);
+    }
+
+    /* ── PAGE TITLE ── */
+    .page-title {
+        font-family: 'Syne', sans-serif;
+        font-size: 26px;
+        font-weight: 800;
+        letter-spacing: -.01em;
+        background: linear-gradient(120deg, #e8edf5 30%, var(--accent));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 6px;
+    }
+
+    .page-subtitle {
+        font-size: 13px;
+        color: var(--muted);
+        font-weight: 300;
+        letter-spacing: .02em;
+        margin-bottom: 32px;
+    }
+
+    /* ── CARD ── */
+    .form-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+        box-shadow: var(--shadow);
+    }
+
+    .card-section {
+        padding: 24px 28px;
+    }
+
+        .card-section + .card-section {
+            border-top: 1px solid var(--border);
+        }
+
+    .section-label {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        color: var(--muted);
         margin-bottom: 18px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+        .section-label::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+    /* ── FORM GRID ── */
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+
+        .form-grid .span-2 {
+            grid-column: 1 / -1;
+        }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
     }
 
     .form-label {
+        font-size: 12px;
         font-weight: 600;
-        display: block;
-        margin-bottom: 6px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: .06em;
     }
 
     .form-input {
         width: 100%;
-        padding: 10px 12px;
-        border-radius: 6px;
-        border: 1px solid #d1d5db;
+        padding: 10px 14px;
+        background: var(--surface2);
+        border: 1px solid var(--border2);
+        border-radius: 9px;
         font-size: 14px;
-        box-sizing: border-box;
+        color: var(--text);
+        font-family: 'DM Sans', sans-serif;
+        transition: border-color .15s, box-shadow .15s, background .15s;
+        -webkit-appearance: none;
     }
+
+        .form-input::placeholder {
+            color: var(--muted);
+            opacity: .6;
+        }
 
         .form-input:focus {
             outline: none;
-            border-color: #2563eb;
-            box-shadow: 0 0 0 2px rgba(37,99,235,0.15);
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(79,140,255,0.15);
+            background: var(--surface3);
+        }
+
+        .form-input[readonly] {
+            color: var(--muted);
+            cursor: not-allowed;
+            background: rgba(255,255,255,0.02);
+            border-color: var(--border);
+        }
+
+        /* number input arrows hidden */
+        .form-input[type="number"]::-webkit-inner-spin-button,
+        .form-input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
         }
 
     .validation {
-        color: #b91c1c;
-        font-size: 13px;
-        margin-top: 4px;
+        color: var(--red);
+        font-size: 12px;
+    }
+
+    /* ── GROUPS ── */
+    .groups-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .group-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 11px 14px;
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        cursor: pointer;
+        transition: border-color .15s, background .15s;
+        user-select: none;
+    }
+
+        .group-item:hover {
+            border-color: var(--border2);
+            background: var(--surface3);
+        }
+
+        .group-item.is-locked {
+            opacity: .55;
+            cursor: not-allowed;
+        }
+
+        .group-item.is-checked {
+            border-color: rgba(79,140,255,0.35);
+            background: rgba(79,140,255,0.06);
+        }
+
+    /* custom checkbox */
+    .check-box {
+        width: 18px;
+        height: 18px;
+        border-radius: 5px;
+        border: 1.5px solid var(--border2);
+        background: var(--surface);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        transition: all .15s;
+    }
+
+    .group-item.is-checked .check-box {
+        background: var(--accent);
+        border-color: var(--accent);
+        box-shadow: 0 0 8px rgba(79,140,255,0.4);
+    }
+
+    .check-box svg {
+        display: none;
+    }
+
+    .group-item.is-checked .check-box svg {
         display: block;
     }
 
-    .alert-error {
-        background: #fee2e2;
-        color: #991b1b;
-        padding: 10px 12px;
-        border-radius: 6px;
-        margin-bottom: 15px;
-        font-weight: 600;
+    /* hide real checkbox */
+    .group-item input[type="checkbox"] {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
     }
 
+    .group-name {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text);
+        flex: 1;
+    }
+
+    .group-locked-tag {
+        font-size: 11px;
+        color: var(--muted);
+        background: var(--surface3);
+        border: 1px solid var(--border2);
+        padding: 2px 8px;
+        border-radius: 999px;
+    }
+
+    /* ── ALERT ── */
+    .alert-error {
+        background: rgba(255,77,106,0.1);
+        border: 1px solid rgba(255,77,106,0.3);
+        color: #ff8a9d;
+        padding: 12px 16px;
+        border-radius: 9px;
+        margin-bottom: 20px;
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .val-summary {
+        color: var(--red);
+        font-size: 13px;
+        margin-bottom: 16px;
+    }
+
+    /* ── ACTIONS ── */
     .form-actions {
-        margin-top: 20px;
+        padding: 20px 28px;
+        background: var(--surface2);
+        border-top: 1px solid var(--border);
         display: flex;
         gap: 10px;
         align-items: center;
+        justify-content: flex-end;
     }
 
     .btn {
-        display: inline-block;
-        padding: 8px 14px;
-        border-radius: 6px;
-        text-decoration: none;
-        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 10px 20px;
+        font-size: 13px;
+        font-weight: 500;
+        font-family: 'DM Sans', sans-serif;
+        border-radius: 9px;
         border: 1px solid transparent;
         cursor: pointer;
-        font-size: 14px;
+        text-decoration: none;
+        transition: all .18s ease;
+        letter-spacing: .01em;
     }
 
     .btn-primary {
-        background-color: #2563eb;
+        background: linear-gradient(135deg, var(--accent), var(--accent2));
         color: white;
+        box-shadow: 0 4px 16px rgba(79,140,255,0.3);
+        min-width: 148px;
+        justify-content: center;
     }
 
-        .btn-primary:hover {
-            background-color: #1d4ed8;
-        }
-
-    .btn-secondary {
-        background-color: #f3f4f6;
-        color: #374151;
-        border: 1px solid #d1d5db;
-    }
-
-        .btn-secondary:hover {
-            background-color: #e5e7eb;
-        }
-
-    .form-actions .btn {
-        min-width: 130px;
-        text-align: center;
-    }
-
-    .toast {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 14px 18px;
-        border-radius: 8px;
-        color: white;
-        font-weight: 600;
-        box-shadow: 0 6px 16px rgba(0,0,0,0.2);
-        z-index: 9999;
-        animation: fadeIn 0.3s ease;
-    }
-
-        .toast.success {
-            background: #16a34a;
-        }
-
-        .toast.error {
-            background: #dc2626;
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 24px rgba(79,140,255,0.45);
         }
 
         .btn-primary:disabled {
-            background-color: #9ca3af;
-            border-color: #9ca3af;
+            opacity: .35;
             cursor: not-allowed;
-            opacity: 0.7;
+            box-shadow: none;
         }
 
-        .btn-primary:disabled:hover {
-            background-color: #9ca3af;
+    .btn-ghost {
+        background: transparent;
+        color: var(--muted);
+        border: 1px solid var(--border2);
+    }
+
+        .btn-ghost:hover {
+            color: var(--text);
+            border-color: rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.04);
         }
 
-    @@keyframes fadeIn {
+    /* ── TOAST ── */
+    .toast {
+        position: fixed;
+        top: 22px;
+        right: 24px;
+        padding: 14px 20px 14px 16px;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 500;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        animation: slideIn 0.3s cubic-bezier(.22,1,.36,1);
+        transition: opacity .3s;
+    }
+
+        .toast.success {
+            background: rgba(22,163,74,0.92);
+            border: 1px solid rgba(34,212,122,0.3);
+            color: #e0fff0;
+        }
+
+        .toast.error {
+            background: rgba(220,38,38,0.92);
+            border: 1px solid rgba(255,77,106,0.4);
+            color: #ffe0e6;
+        }
+
+    .number-input {
+        display: flex;
+        align-items: stretch;
+        width: 200px;
+    }
+
+        .number-input .form-input {
+            text-align: center;
+            border-radius: 0;
+            border-left: none;
+            border-right: none;
+        }
+
+    .num-btn {
+        width: 38px;
+        border: 1px solid var(--border2);
+        background: var(--surface2);
+        color: var(--text);
+        font-size: 18px;
+        cursor: pointer;
+        transition: background .15s;
+    }
+
+        .num-btn:hover {
+            background: var(--surface3);
+        }
+
+        .num-btn.minus {
+            border-radius: 9px 0 0 9px;
+        }
+
+        .num-btn.plus {
+            border-radius: 0 9px 9px 0;
+        }
+
+    .logout-btn {
+        background: none;
+        border: none;
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 12px;
+        font-family: inherit;
+        padding: 0;
+        transition: color .15s;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+    }
+
+        .logout-btn:hover {
+            color: var(--red);
+        }
+
+    .loading-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(11,15,26,0.75);
+        backdrop-filter: blur(4px);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 99999;
+        transition: opacity .2s;
+    }
+
+        .loading-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+    .loader {
+        width: 42px;
+        height: 42px;
+        border: 3px solid rgba(255,255,255,0.15);
+        border-top: 3px solid var(--accent);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+
+    .loading-text {
+        margin-top: 14px;
+        font-size: 13px;
+        color: var(--muted);
+        letter-spacing: .05em;
+    }
+
+    .footer {
+        text-align: center;
+        padding: 12px;
+        font-size: 12px;
+        color: var(--muted);
+        letter-spacing: .03em;
+        border-top: 1px solid var(--border);
+    }
+
+        .footer span {
+            opacity: .6;
+        }
+
+    @@keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    @@keyframes slideIn {
         from {
             opacity: 0;
-            transform: translateY(-10px);
+            transform: translateX(30px);
         }
 
         to {
             opacity: 1;
-            transform: translateY(0);
+            transform: translateX(0);
         }
     }
-</style>
 
-<h2>Criar usuário temporário</h2>
+</style>
 
 @if (TempData["ToastMessage"] != null)
 {
-    <div id="toast"
-         class="toast @(TempData["ToastType"])">
-
+    <div id="toast" class="toast @(TempData["ToastType"])">
+        @(TempData["ToastType"]?.ToString() == "success" ? "✓" : "✕")
         @TempData["ToastMessage"]
     </div>
 }
 
-<div class="form-card">
+@functions {
+    string UserInitials(string name) => string.IsNullOrWhiteSpace(name) ? "?" :
+        name.Split(' ').Take(2).Aggregate("", (a, w) => a + (w.Length > 0 ? w[0].ToString().ToUpper() : ""));
+}
+
+<!-- TOP BAR -->
+<div class="topbar">
+    <div class="topbar-brand">
+        <div class="brand-icon">🛡</div>
+        <div>
+            <div class="brand-title">Harmony SASE</div>
+            <div class="brand-sub">Access Manager</div>
+        </div>
+    </div>
+    <div class="topbar-right">
+        <div class="session-pill">
+            <div class="avatar">@UserInitials(User.Identity?.Name ?? "")</div>
+            <strong>@User.Identity?.Name</strong>
+        </div>
+
+        <form method="post" asp-page-handler="Logout">
+            <button type="submit" class="logout-btn">Sair</button>
+        </form>
+    </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+    <!-- BREADCRUMB -->
+    <nav class="breadcrumb">
+        <a href="/Users">Usuários</a>
+        <span class="breadcrumb-sep">›</span>
+        <span class="breadcrumb-current">@(Model.IsEdit ? "Editar grupos" : "Novo usuário")</span>
+    </nav>
+
+    <div class="page-title">@(Model.IsEdit ? "Editar grupos de acesso" : "Novo usuário temporário")</div>
+    <div class="page-subtitle">
+        @(Model.IsEdit
+                ? "Modifique os grupos de acesso do usuário no Harmony SASE."
+                : "Preencha os dados para criar um novo acesso remoto temporário.")
+    </div>
 
     @if (!string.IsNullOrEmpty(Model.Message))
     {
-        <div class="alert-error">
-            @Model.Message
-        </div>
+        <div class="alert-error">⚠ @Model.Message</div>
     }
 
-    <div asp-validation-summary="All" class="validation"></div>
+    <div asp-validation-summary="All" class="val-summary"></div>
 
     <form method="post">
-
         <input type="hidden" asp-for="IsEdit" value="@Model.IsEdit" />
 
-        <div class="form-group">
-            <label asp-for="Email" class="form-label"></label>
-            <input asp-for="Email" class="form-input" readonly="@Model.IsEdit" />
-            <span asp-validation-for="Email" class="validation"></span>
-        </div>
+        <div class="form-card">
 
-        <div class="form-group">
-            <label asp-for="Name" class="form-label"></label>
-            <input asp-for="Name" class="form-input" readonly="@Model.IsEdit" />
-            <span asp-validation-for="Name" class="validation"></span>
-        </div>
+            <!-- SECTION: Dados do usuário -->
+            <div class="card-section">
+                <div class="section-label">Dados do usuário</div>
+                <div class="form-grid">
 
-        <div class="form-group">
-            <label asp-for="LastName" class="form-label"></label>
-            <input asp-for="LastName" class="form-input" readonly="@Model.IsEdit" />
-            <span asp-validation-for="LastName" class="validation"></span>
-        </div>
+                    <div class="form-group span-2">
+                        <label asp-for="Email" class="form-label"></label>
+                        <input asp-for="Email" class="form-input" placeholder="usuario@empresa.com" readonly="@Model.IsEdit" />
+                        <span asp-validation-for="Email" class="validation"></span>
+                    </div>
 
-        <div class="form-group">
-            <label asp-for="DurationDays" class="form-label"></label>
-            <input asp-for="DurationDays" type="number" class="form-input" readonly="@Model.IsEdit" />
-            <span asp-validation-for="DurationDays" class="validation"></span>
-        </div>
+                    <div class="form-group">
+                        <label asp-for="Name" class="form-label"></label>
+                        <input asp-for="Name" class="form-input" placeholder="Nome" readonly="@Model.IsEdit" />
+                        <span asp-validation-for="Name" class="validation"></span>
+                    </div>
 
-        <div class="form-group">
-            <label>Grupos de acesso</label>
+                    <div class="form-group">
+                        <label asp-for="LastName" class="form-label"></label>
+                        <input asp-for="LastName" class="form-input" placeholder="Sobrenome" readonly="@Model.IsEdit" />
+                        <span asp-validation-for="LastName" class="validation"></span>
+                    </div>
 
-            <div class="form-check">
-                <input class="form-check-input"
-                       type="checkbox"
-                       checked
-                       disabled />
-
-                <label class="form-check-label">
-                    All Users (sempre incluído)
-                </label>
+                </div>
             </div>
 
-            @foreach (var g in Model.AvailableGroups)
-            {
-                var isChecked = Model.SelectedGroups.Contains(g.Id);
+            <!-- SECTION: Duração do acesso -->
+            <div class="card-section">
+                <div class="section-label">Duração do acesso</div>
+                <div class="form-group" style="max-width:200px">
+                    <label asp-for="DurationDays" class="form-label"></label>
+                    <div class="number-input">
+                        <button type="button" class="num-btn minus">−</button>
 
-                <div class="form-check-input">
-                    <input class="form-check-input group-checkbox"
-                           type="checkbox"
-                           name="SelectedGroups"
-                           value="@g.Id"
-                           @(isChecked ? "checked" : "") />
+                        <input asp-for="DurationDays"
+                               type="number"
+                               class="form-input"
+                               min="1"
+                               max="365"
+                               step="1"
+                               placeholder="30"
+                               readonly="@Model.IsEdit" />
 
-                    <label class="form-check-label">
-                        @g.Name
-                    </label>
+                        <button type="button" class="num-btn plus">+</button>
+                    </div>
+                    <span asp-validation-for="DurationDays" class="validation"></span>
                 </div>
-            }
-        </div>
+            </div>
 
-        <div class="form-actions">
-            <button id="submitBtn"
-                    type="submit"
-                    class="btn btn-primary"
-                    disabled="@(Model.IsEdit)">
-                @(Model.IsEdit ? "Atualizar grupos" : "Criar usuário")
-            </button>
-            <a href="/Users" class="btn btn-secondary">Cancelar</a>
-        </div>
+            <!-- SECTION: Grupos de acesso -->
+            <div class="card-section">
+                <div class="section-label">Grupos de acesso</div>
+                <div class="groups-list">
 
+                    <!-- All Users — sempre incluído, bloqueado -->
+                    <label class="group-item is-locked is-checked">
+                        <div class="check-box">
+                            <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                                <path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                        </div>
+                        <span class="group-name">All Users</span>
+                        <span class="group-locked-tag">sempre incluído</span>
+                        <input type="checkbox" checked disabled />
+                    </label>
+
+                    @foreach (var g in Model.AvailableGroups)
+                    {
+                        var isChecked = Model.SelectedGroups.Contains(g.Id);
+                        <label class="group-item @(isChecked ? "is-checked" : "")"
+                               data-group-id="@g.Id">
+                            <div class="check-box">
+                                <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                                    <path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                            </div>
+                            <span class="group-name">@g.Name</span>
+                            <input class="group-checkbox"
+                                   type="checkbox"
+                                   name="SelectedGroups"
+                                   value="@g.Id"
+                                   @(isChecked ? "checked" : "") />
+                        </label>
+                    }
+
+                </div>
+            </div>
+
+            <!-- ACTIONS -->
+            <div class="form-actions">
+                <a href="/Users" class="btn btn-ghost">Cancelar</a>
+                <button id="submitBtn"
+                        type="submit"
+                        class="btn btn-primary"
+                        disabled="@(Model.IsEdit)">
+                    @(Model.IsEdit ? "Salvar alterações" : "Criar usuário")
+                </button>
+            </div>
+
+        </div>
     </form>
 </div>
+
+<footer class="footer">
+    <span>Desenvolvido pela CGSIC — Coordenação-Geral de Segurança da Informação e Cibersegurança</span>
+</footer>
+
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
 }
 
+<div id="loadingOverlay" class="loading-overlay hidden">
+    <div class="loader"></div>
+    <div class="loading-text">Processando...</div>
+</div>
+
 <script>
+    showLoading("Carregando grupos...");
+
+window.addEventListener("load", () => {
+    hideLoading();
+});
+
+    // Toast auto-dismiss
     setTimeout(() => {
-        const toast = document.getElementById("toast");
-        if (toast) {
-            toast.style.opacity = "0";
-            setTimeout(() => toast.remove(), 400);
-        }
+        const t = document.getElementById("toast");
+        if (t) { t.style.opacity = "0"; setTimeout(() => t.remove(), 400); }
     }, 4000);
 
-        document.addEventListener("DOMContentLoaded", function () {
+    // Custom checkbox toggle
+    document.querySelectorAll('.group-item:not(.is-locked)').forEach(item => {
+        item.addEventListener('click', () => {
+            const cb = item.querySelector('input[type="checkbox"]');
+            cb.checked = !cb.checked;
+            item.classList.toggle('is-checked', cb.checked);
+            if (isEdit) checkChanges();
+        });
+    });
 
-        const isEdit = '@Model.IsEdit'.toLowerCase() === 'true';
+    // Edit mode: enable submit only when something changes
+    const isEdit = '@Model.IsEdit'.toLowerCase() === 'true';
 
-        if (!isEdit) return;
-
-        const checkboxes = document.querySelectorAll(".group-checkbox");
-        const submitBtn = document.getElementById("submitBtn");
-
-        const originalState = Array.from(checkboxes).map(cb => cb.checked);
+    if (isEdit) {
+        const checkboxes = document.querySelectorAll('.group-checkbox');
+        const submitBtn  = document.getElementById('submitBtn');
+        const original   = Array.from(checkboxes).map(cb => cb.checked);
 
         function checkChanges() {
-
-            const currentState = Array.from(checkboxes).map(cb => cb.checked);
-
-            const changed = currentState.some((v, i) => v !== originalState[i]);
-
+            const changed = Array.from(checkboxes).some((cb, i) => cb.checked !== original[i]);
             submitBtn.disabled = !changed;
         }
 
-        checkboxes.forEach(cb => {
-            cb.addEventListener("change", checkChanges);
+        checkboxes.forEach(cb => cb.addEventListener('change', checkChanges));
+    }
+
+        document.querySelectorAll('.number-input').forEach(wrapper => {
+
+        const input = wrapper.querySelector('input');
+        const plus = wrapper.querySelector('.plus');
+        const minus = wrapper.querySelector('.minus');
+
+        plus.addEventListener('click', () => {
+            input.stepUp();
         });
 
+        minus.addEventListener('click', () => {
+            input.stepDown();
+        });
+
+    });
+
+        function showLoading(text = "Processando...") {
+        const overlay = document.getElementById("loadingOverlay");
+        overlay.querySelector(".loading-text").innerText = text;
+        overlay.classList.remove("hidden");
+    }
+
+    function hideLoading() {
+        document.getElementById("loadingOverlay").classList.add("hidden");
+    }
+
+    document.querySelectorAll("form").forEach(form => {
+        form.addEventListener("submit", () => {
+            showLoading("Processando...");
+            document.body.style.cursor = "wait";
+        });
     });
 </script>

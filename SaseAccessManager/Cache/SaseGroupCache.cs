@@ -34,7 +34,7 @@ namespace SaseAccessManager.Cache
                 if (groups.Count > 0)
                 {
                     _cache = groups;
-                    _expires = DateTime.UtcNow.AddMinutes(10);
+                    _expires = DateTime.UtcNow.AddMinutes(30);
                 }
 
                 return _cache ?? [];
