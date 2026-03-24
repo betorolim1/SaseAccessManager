@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using SaseAccessManager.Cache;
+using SaseAccessManager.DTOs;
 using SaseAccessManager.Models;
 using SaseAccessManager.Services;
 
@@ -14,6 +16,7 @@ public class IndexModel : PageModel
 {
     private readonly FileUserStore _store;
     private readonly UserService _service;
+    private readonly ISaseGroupCache _groupCache;
 
     [TempData]
     public string? ErrorMessage { get; set; }
@@ -25,11 +28,14 @@ public class IndexModel : PageModel
     public string? ToastType { get; set; }
 
     public List<TemporarySaseUser> Users { get; set; } = new();
+    public IReadOnlyList<SaseGroupDto> AllGroups { get; private set; } = [];
 
-    public IndexModel(FileUserStore store, UserService service)
+
+    public IndexModel(FileUserStore store, UserService service, ISaseGroupCache groupCache)
     {
         _store = store;
         _service = service;
+        _groupCache = groupCache;
     }
 
     public async Task OnGet()
@@ -72,8 +78,11 @@ public class IndexModel : PageModel
 
     private async Task LoadUsers()
     {
+        AllGroups = await _groupCache.GetAsync();
+
         Users = (await _store.GetAll())
-        .OrderByDescending(u => u.CreatedAt)
+        .OrderBy(u => u.Status == UserStatus.Removed ? 1 : 0)
+        .ThenByDescending(u => u.CreatedAt)
         .ToList();
     }
 }

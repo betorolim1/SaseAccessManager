@@ -43,7 +43,7 @@ public class CreateModel : PageModel
     [Display(Name = "Validade (dias)")]
     [Required(ErrorMessage = "Duração é obrigatória.")]
     [Range(1, 365, ErrorMessage = "Duração deve ser entre 1 e 365 dias.")]
-    public int DurationDays { get; set; } = 15;
+    public int DurationDays { get; set; } = 30;
 
     [BindProperty]
     public InputModel Input { get; set; } = new();
@@ -112,7 +112,10 @@ public class CreateModel : PageModel
         Email = user.Email;
         Name = user.Name ?? "";
         LastName = user.LastName ?? "";
-        DurationDays = (int)(user.ExpiresAt - DateTime.UtcNow).TotalDays;
+        DurationDays = Math.Max(
+            1,
+            (int)Math.Ceiling((user.ExpiresAt - DateTime.UtcNow).TotalDays)
+        );
 
         SelectedGroups = user.AccessGroups ?? [];
 
@@ -153,7 +156,7 @@ public class CreateModel : PageModel
 
         if (!create.Success)
         {
-            ModelState.AddModelError("", create.Error!);
+            Message = create.Error;
             return Page();
         }
 

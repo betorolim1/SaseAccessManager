@@ -91,12 +91,12 @@ namespace SaseAccessManager.Worker
         private async Task WaitUntilNextRun(CancellationToken token)
         {
             var now = DateTime.Now;
-            var nextRun = DateTime.Now.AddMinutes(1); //DateTime.Today.AddDays(1).AddHours(3); // 03:00
+            var nextRun = DateTime.Today.AddHours(3);
+
+            if (now >= nextRun)
+                nextRun = nextRun.AddDays(1);
 
             var delay = nextRun - now;
-
-            if (delay < TimeSpan.Zero)
-                delay = TimeSpan.FromHours(24);
 
             await Task.Delay(delay, token);
         }

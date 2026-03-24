@@ -1,715 +1,20 @@
 ﻿@page
 @model SaseAccessManager.Pages.Users.IndexModel
 
-<style>
-    *, *::before, *::after {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
+<link rel="stylesheet" href="~/css/users/index.css" asp-append-version="true">
+
+    @if (TempData["ToastMessage"] != null)
+    {
+        <div id="toast" class="toast @(TempData["ToastType"])">
+            @(TempData["ToastType"]?.ToString() == "success" ? "✓" : "✕")
+            @TempData["ToastMessage"]
+        </div>
     }
-
-    :root {
-        --bg: #0b0f1a;
-        --surface: #111827;
-        --surface2: #1a2235;
-        --border: rgba(255,255,255,0.07);
-        --border2: rgba(255,255,255,0.12);
-        --text: #e8edf5;
-        --muted: #6b7a99;
-        --accent: #4f8cff;
-        --accent2: #7c5cfc;
-        --green: #22d47a;
-        --red: #ff4d6a;
-        --amber: #ffb547;
-        --radius: 12px;
-        --shadow: 0 8px 32px rgba(0,0,0,0.45);
-    }
-
-    body {
-        background: var(--bg);
-        color: var(--text);
-        font-family: 'DM Sans', sans-serif;
-        min-height: 100vh;
-        padding: 0;
-    }
-
-    /* ── TOP BAR ── */
-    .topbar {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 14px 32px;
-        background: var(--surface);
-        border-bottom: 1px solid var(--border);
-        position: sticky;
-        top: 0;
-        z-index: 100;
-        backdrop-filter: blur(12px);
-    }
-
-    .topbar-brand {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
-
-    .brand-icon {
-        width: 36px;
-        height: 36px;
-        border-radius: 10px;
-        background: linear-gradient(135deg, var(--accent), var(--accent2));
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 18px;
-        box-shadow: 0 0 20px rgba(79,140,255,0.35);
-    }
-
-    .brand-title {
-        font-family: 'Syne', sans-serif;
-        font-size: 16px;
-        font-weight: 700;
-        letter-spacing: .02em;
-        color: var(--text);
-    }
-
-    .brand-sub {
-        font-size: 11px;
-        color: var(--muted);
-        letter-spacing: .06em;
-        text-transform: uppercase;
-    }
-
-    .topbar-right {
-        display: flex;
-        align-items: center;
-        gap: 20px;
-    }
-
-    .session-pill {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        background: var(--surface2);
-        border: 1px solid var(--border2);
-        border-radius: 999px;
-        padding: 6px 14px 6px 8px;
-        font-size: 13px;
-        color: var(--muted);
-    }
-
-    .avatar {
-        width: 26px;
-        height: 26px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, var(--accent), var(--accent2));
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 11px;
-        font-weight: 700;
-        color: white;
-    }
-
-    .session-pill strong {
-        color: var(--text);
-        font-weight: 500;
-    }
-
-    .logout-btn {
-        background: none;
-        border: none;
-        color: var(--muted);
-        cursor: pointer;
-        font-size: 12px;
-        font-family: inherit;
-        padding: 0;
-        transition: color .15s;
-        text-decoration: underline;
-        text-underline-offset: 3px;
-    }
-
-        .logout-btn:hover {
-            color: var(--red);
-        }
-
-    /* ── MAIN ── */
-    .main {
-        max-width: 1280px;
-        margin: 0 auto;
-        padding: 20px 32px;
-    }
-
-    /* ── PAGE HEADER ── */
-    .page-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-end;
-        margin-bottom: 32px;
-    }
-
-    .page-title {
-        font-family: 'Syne', sans-serif;
-        font-size: 28px;
-        font-weight: 800;
-        letter-spacing: -.01em;
-        line-height: 1.1;
-        background: linear-gradient(120deg, #e8edf5 30%, var(--accent));
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-
-    .page-subtitle {
-        margin-top: 6px;
-        font-size: 13px;
-        color: var(--muted);
-        font-weight: 300;
-        letter-spacing: .02em;
-    }
-
-    .header-actions {
-        display: flex;
-        gap: 10px;
-        align-items: center;
-    }
-
-    /* ── BUTTONS ── */
-    .btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 9px 16px;
-        font-size: 13px;
-        font-weight: 500;
-        font-family: 'DM Sans', sans-serif;
-        border-radius: 9px;
-        border: 1px solid transparent;
-        cursor: pointer;
-        text-decoration: none;
-        transition: all .18s ease;
-        letter-spacing: .01em;
-        white-space: nowrap;
-    }
-
-    .btn-primary {
-        background: linear-gradient(135deg, var(--accent), var(--accent2));
-        color: white;
-        border-color: transparent;
-        box-shadow: 0 4px 16px rgba(79,140,255,0.3);
-    }
-
-        .btn-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 24px rgba(79,140,255,0.45);
-        }
-
-    .btn-ghost {
-        background: var(--surface2);
-        color: var(--muted);
-        border: 1px solid var(--border2);
-    }
-
-        .btn-ghost:hover {
-            color: var(--text);
-            border-color: rgba(255,255,255,0.2);
-            background: rgba(255,255,255,0.06);
-        }
-
-    .btn-danger {
-        background: transparent;
-        color: var(--red);
-        border: 1px solid rgba(255,77,106,0.25);
-        font-size: 12px;
-        padding: 6px 12px;
-    }
-
-        .btn-danger:hover {
-            background: rgba(255,77,106,0.1);
-            border-color: rgba(255,77,106,0.5);
-        }
-
-    .btn-edit {
-        background: transparent;
-        color: var(--muted);
-        border: 1px solid var(--border2);
-        font-size: 12px;
-        padding: 6px 12px;
-    }
-
-        .btn-edit:hover {
-            color: var(--text);
-            border-color: rgba(255,255,255,0.2);
-            background: var(--surface2);
-        }
-
-    /* ── STATS ROW ── */
-    .stats-row {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 16px;
-        margin-bottom: 28px;
-    }
-
-    .stat-card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 20px 22px;
-        position: relative;
-        overflow: hidden;
-        transition: border-color .2s;
-    }
-
-        .stat-card:hover {
-            border-color: var(--border2);
-        }
-
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 2px;
-            border-radius: 2px 2px 0 0;
-        }
-
-        .stat-card.green::before {
-            background: var(--green);
-        }
-
-        .stat-card.red::before {
-            background: var(--red);
-        }
-
-        .stat-card.gray::before {
-            background: var(--muted);
-        }
-
-    .stat-label {
-        font-size: 11px;
-        text-transform: uppercase;
-        letter-spacing: .08em;
-        color: var(--muted);
-        margin-bottom: 10px;
-    }
-
-    .stat-value {
-        font-family: 'Syne', sans-serif;
-        font-size: 32px;
-        font-weight: 800;
-        line-height: 1;
-    }
-
-    .stat-card.green .stat-value {
-        color: var(--green);
-    }
-
-    .stat-card.red .stat-value {
-        color: var(--red);
-    }
-
-    .stat-card.gray .stat-value {
-        color: var(--muted);
-    }
-
-    /* ── ALERT ── */
-    .alert-error {
-        background: rgba(255,77,106,0.1);
-        border: 1px solid rgba(255,77,106,0.3);
-        color: #ff8a9d;
-        padding: 12px 16px;
-        border-radius: var(--radius);
-        margin-bottom: 20px;
-        font-size: 13px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    /* ── TABLE ── */
-    .table-wrap {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        overflow: hidden;
-        box-shadow: var(--shadow);
-        max-height: calc(100vh - 356px);
-        overflow-y: auto;
-    }
-
-    .table-toolbar {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 16px 20px;
-        border-bottom: 1px solid var(--border);
-    }
-
-    .table-toolbar-title {
-        font-size: 13px;
-        font-weight: 600;
-        color: var(--muted);
-        text-transform: uppercase;
-        letter-spacing: .07em;
-    }
-
-    table {
-        border-collapse: collapse;
-        width: 100%;
-    }
-
-    thead th {
-        padding: 13px 18px;
-        text-align: left;
-        font-size: 11px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: .08em;
-        color: var(--muted);
-        background: var(--surface);
-        border-bottom: 1px solid var(--border);
-        white-space: nowrap;
-        position: sticky;
-        top: 0;
-        z-index: 10;
-    }
-
-    tbody td {
-        padding: 0 18px;
-        height: 68px;
-        vertical-align: middle;
-        border-bottom: 1px solid var(--border);
-        font-size: 14px;
-    }
-
-    tbody tr:last-child td {
-        border-bottom: none;
-    }
-
-    tbody tr {
-        transition: background .13s;
-        position: relative;
-    }
-
-        tbody tr:hover {
-            background: rgba(255,255,255,0.025);
-        }
-
-        /* Row accent lines */
-        tbody tr.row-active td:first-child {
-            border-left: 3px solid var(--green);
-            padding-left: 15px;
-        }
-
-        tbody tr.row-error td:first-child {
-            border-left: 3px solid var(--red);
-            padding-left: 15px;
-        }
-
-        tbody tr.row-removed td:first-child {
-            border-left: 3px solid var(--muted);
-            padding-left: 15px;
-            opacity: .6;
-        }
-
-    .cell-email {
-        font-weight: 500;
-        color: var(--text);
-        font-size: 13.5px;
-    }
-
-    .cell-name {
-        color: var(--muted);
-        font-weight: 300;
-    }
-
-    .cell-date {
-        font-size: 12.5px;
-        color: var(--muted);
-        font-variant-numeric: tabular-nums;
-    }
-
-    /* badges */
-    .badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        padding: 4px 10px;
-        border-radius: 999px;
-        font-size: 11.5px;
-        font-weight: 600;
-        letter-spacing: .02em;
-    }
-
-        .badge::before {
-            content: '';
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-        }
-
-    .badge-active {
-        background: rgba(34,212,122,0.12);
-        color: #34d983;
-        border: 1px solid rgba(34,212,122,0.25);
-    }
-
-        .badge-active::before {
-            background: var(--green);
-            box-shadow: 0 0 6px var(--green);
-        }
-
-    .badge-error {
-        background: rgba(255,77,106,0.12);
-        color: #ff7088;
-        border: 1px solid rgba(255,77,106,0.25);
-    }
-
-        .badge-error::before {
-            background: var(--red);
-        }
-
-    .badge-removed {
-        background: rgba(107,122,153,0.12);
-        color: var(--muted);
-        border: 1px solid rgba(107,122,153,0.2);
-    }
-
-        .badge-removed::before {
-            background: var(--muted);
-        }
-
-    /* expiry */
-    .expire-ok {
-        color: var(--green);
-        font-weight: 500;
-        font-size: 13px;
-    }
-
-    .expire-today {
-        color: var(--amber);
-        font-weight: 600;
-        font-size: 13px;
-    }
-
-    .expire-expired {
-        color: var(--red);
-        font-weight: 600;
-        font-size: 13px;
-    }
-
-    .expire-na {
-        color: var(--muted);
-    }
-
-    .actions {
-        display: flex;
-        gap: 6px;
-        justify-content: flex-end;
-        align-items: center;
-    }
-
-    thead th:last-child,
-    tbody td:last-child {
-        text-align: right;
-        width: 170px;
-    }
-
-    /* ── TOAST ── */
-    .toast {
-        position: fixed;
-        top: 22px;
-        right: 24px;
-        padding: 14px 20px 14px 16px;
-        border-radius: 10px;
-        font-size: 14px;
-        font-weight: 500;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-        z-index: 9999;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        animation: slideIn 0.3s cubic-bezier(.22,1,.36,1);
-        backdrop-filter: blur(8px);
-        transition: opacity .3s;
-    }
-
-        .toast.success {
-            background: rgba(22,163,74,0.92);
-            border: 1px solid rgba(34,212,122,0.3);
-            color: #e0fff0;
-        }
-
-        .toast.error {
-            background: rgba(220,38,38,0.92);
-            border: 1px solid rgba(255,77,106,0.4);
-            color: #ffe0e6;
-        }
-
-    @@keyframes slideIn {
-        from {
-            opacity: 0;
-            transform: translateX(30px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateX(0);
-        }
-    }
-
-    /* ── SCROLLBAR ── */
-    ::-webkit-scrollbar {
-        width: 6px;
-        height: 6px;
-    }
-
-    ::-webkit-scrollbar-track {
-        background: var(--bg);
-    }
-
-    ::-webkit-scrollbar-thumb {
-        background: var(--surface2);
-        border-radius: 3px;
-    }
-
-    /* ── EMPTY STATE ── */
-    .empty-state {
-        text-align: center;
-        padding: 64px 24px;
-        color: var(--muted);
-    }
-
-    .empty-icon {
-        font-size: 40px;
-        margin-bottom: 12px;
-        opacity: .4;
-    }
-
-    .empty-text {
-        font-size: 14px;
-    }
-
-    .loading-overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(11,15,26,0.75);
-        backdrop-filter: blur(4px);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        z-index: 99999;
-        transition: opacity .2s;
-    }
-
-        .loading-overlay.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
-
-    .loader {
-        width: 42px;
-        height: 42px;
-        border: 3px solid rgba(255,255,255,0.15);
-        border-top: 3px solid var(--accent);
-        border-radius: 50%;
-        animation: spin 0.8s linear infinite;
-    }
-
-    .loading-text {
-        margin-top: 14px;
-        font-size: 13px;
-        color: var(--muted);
-        letter-spacing: .05em;
-    }
-
-    .footer {
-        text-align: center;
-        padding: 12px;
-        font-size: 12px;
-        color: var(--muted);
-        letter-spacing: .03em;
-        border-top: 1px solid var(--border);
-    }
-
-        .footer span {
-            opacity: .6;
-        }
-
-    .search-bar {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-bottom: 20px;
-    }
-
-    .search-input-wrap {
-        position: relative;
-        flex: 1;
-        max-width: 380px;
-    }
-
-    .search-icon {
-        position: absolute;
-        left: 12px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: var(--muted);
-        font-size: 14px;
-        pointer-events: none;
-    }
-
-    .search-input {
-        width: 100%;
-        padding: 9px 14px 9px 36px;
-        background: var(--surface2);
-        border: 1px solid var(--border2);
-        border-radius: 9px;
-        font-size: 13px;
-        color: var(--text);
-        font-family: 'DM Sans', sans-serif;
-        transition: border-color .15s, box-shadow .15s;
-    }
-
-        .search-input::placeholder {
-            color: var(--muted);
-            opacity: .6;
-        }
-
-        .search-input:focus {
-            outline: none;
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(79,140,255,0.15);
-        }
-
-    .search-count {
-        font-size: 12px;
-        color: var(--muted);
-    }
-
-    .row-hidden {
-        display: none;
-    }
-
-    @@keyframes spin {
-        to {
-            transform: rotate(360deg);
-        }
-    }
-</style>
-
-@if (TempData["ToastMessage"] != null)
-{
-    <div id="toast" class="toast @(TempData["ToastType"])">
-        @(TempData["ToastType"]?.ToString() == "success" ? "✓" : "✕")
-        @TempData["ToastMessage"]
-    </div>
-}
 
 @functions {
+    string GroupName(string groupId) =>
+        Model.AllGroups.FirstOrDefault(g => g.Id == groupId)?.Name ?? groupId;
+
     string RowClass(UserStatus s) => s switch
     {
         UserStatus.Active => "row-active",
@@ -772,7 +77,7 @@
             <div class="page-subtitle">Gestão de acessos remotos via Harmony SASE</div>
         </div>
         <div class="header-actions">
-            <button class="btn btn-ghost" onclick="this.innerText='↻  Atualizando…'; location.reload();">
+            <button class="btn btn-ghost" id="refreshBtn">
                 ↻ &nbsp;Atualizar
             </button>
             <a href="/Users/Create" class="btn btn-primary">
@@ -822,6 +127,7 @@
                 <tr>
                     <th>Email</th>
                     <th>Nome</th>
+                    <th>Grupos</th>
                     <th>Criado em</th>
                     <th>Expira em</th>
                     <th>Status</th>
@@ -832,7 +138,7 @@
                 @if (!Model.Users.Any())
                 {
                     <tr>
-                        <td colspan="6">
+                        <td colspan="7">
                             <div class="empty-state">
                                 <div class="empty-icon">👤</div>
                                 <div class="empty-text">Nenhum usuário encontrado.</div>
@@ -845,6 +151,40 @@
                     <tr class="@RowClass(u.Status)">
                         <td class="cell-email">@u.Email</td>
                         <td class="cell-name">@u.Name @u.LastName</td>
+                        <td>
+                            <div class="groups-trigger">
+                                <svg class="groups-icon" width="16" height="16" viewBox="0 0 24 24"
+                                     fill="none" stroke="currentColor" stroke-width="2"
+                                     stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                                    <circle cx="9" cy="7" r="4" />
+                                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                                </svg>
+                                <span class="groups-count">@((u.AccessGroups?.Count ?? 0) + 1)</span>
+
+                                <div class="groups-tooltip">
+                                    <div class="tooltip-title">Grupos de acesso</div>
+
+                                    <div class="tooltip-group is-locked">
+                                        <span class="tooltip-dot locked"></span>
+                                        All Users
+                                        <span class="tooltip-lock-tag">padrão</span>
+                                    </div>
+
+                                    @if (u.AccessGroups != null && u.AccessGroups.Any())
+                                    {
+                                        @foreach (var gId in u.AccessGroups)
+                                        {
+                                            <div class="tooltip-group">
+                                                <span class="tooltip-dot"></span>
+                                                @GroupName(gId)
+                                            </div>
+                                        }
+                                    }
+                                </div>
+                            </div>
+                        </td>
                         <td class="cell-date">@u.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
                         <td>
                             @if (u.Status == UserStatus.Removed)
@@ -878,8 +218,8 @@
                                     <form method="post" asp-page-handler="Remove" style="display:inline">
                                         <input type="hidden" name="id" value="@u.Id" />
                                         <button type="submit"
-                                                class="btn btn-danger"
-                                                onclick="return confirm('Remover acesso de @u.Email ?')">
+                                                class="btn btn-danger remove-btn"
+                                                data-email="@u.Email">
                                             Remover
                                         </button>
                                     </form>
@@ -908,53 +248,67 @@
     <div class="loading-text">Processando...</div>
 </div>
 
-<script>
-    setTimeout(() => {
-        const t = document.getElementById("toast");
-        if (t) { t.style.opacity = "0"; setTimeout(() => t.remove(), 400); }
-    }, 4000);
-
-        function showLoading(text = "Processando...") {
-        const overlay = document.getElementById("loadingOverlay");
-        overlay.querySelector(".loading-text").innerText = text;
-        overlay.classList.remove("hidden");
-    }
-
-    function hideLoading() {
-        document.getElementById("loadingOverlay").classList.add("hidden");
-    }
-
-    document.querySelectorAll("form").forEach(form => {
-        form.addEventListener("submit", () => {
-            showLoading("Processando...");
-            document.body.style.cursor = "wait";
+<script nonce="@HttpContext.Items["CSP-Nonce"]">
+        document.querySelectorAll(".remove-btn").forEach(btn => {
+        btn.addEventListener("click", function (e) {
+            const email = this.dataset.email;
+            if (!confirm(`Remover acesso de ${email}?`)) {
+                e.preventDefault();
+            }
         });
     });
 
-        const searchInput = document.getElementById('searchInput');
-    const rows = document.querySelectorAll('tbody tr');
-    const totalCount = document.getElementById('totalCount');
+    document.getElementById("refreshBtn")?.addEventListener("click", function () {
+        this.innerText = "↻  Atualizando…";
+        location.reload();
+    });
 
-    function updateCount(visible) {
-        const total = rows.length;
-        totalCount.textContent = visible < total
-            ? `${visible} de ${total} usuário(s)`
-            : `${total} usuário(s)`;
-    }
+        setTimeout(() => {
+            const t = document.getElementById("toast");
+            if (t) { t.style.opacity = "0"; setTimeout(() => t.remove(), 400); }
+        }, 4000);
 
-    updateCount(rows.length);
+            function showLoading(text = "Processando...") {
+            const overlay = document.getElementById("loadingOverlay");
+            overlay.querySelector(".loading-text").innerText = text;
+            overlay.classList.remove("hidden");
+        }
 
-    searchInput.addEventListener('input', () => {
-        const term = searchInput.value.toLowerCase().trim();
+        function hideLoading() {
+            document.getElementById("loadingOverlay").classList.add("hidden");
+        }
 
-        let visible = 0;
-        rows.forEach(row => {
-            const text = row.textContent.toLowerCase();
-            const match = !term || text.includes(term);
-            row.classList.toggle('row-hidden', !match);
-            if (match) visible++;
+        document.querySelectorAll("form").forEach(form => {
+            form.addEventListener("submit", () => {
+                showLoading("Processando...");
+                document.body.style.cursor = "wait";
+            });
         });
 
-        updateCount(visible);
-    });
+            const searchInput = document.getElementById('searchInput');
+        const rows = document.querySelectorAll('tbody tr');
+        const totalCount = document.getElementById('totalCount');
+
+        function updateCount(visible) {
+            const total = rows.length;
+            totalCount.textContent = visible < total
+                ? `${visible} de ${total} usuário(s)`
+                : `${total} usuário(s)`;
+        }
+
+        updateCount(rows.length);
+
+        searchInput.addEventListener('input', () => {
+            const term = searchInput.value.toLowerCase().trim();
+
+            let visible = 0;
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                const match = !term || text.includes(term);
+                row.classList.toggle('row-hidden', !match);
+                if (match) visible++;
+            });
+
+            updateCount(visible);
+        });
 </script>

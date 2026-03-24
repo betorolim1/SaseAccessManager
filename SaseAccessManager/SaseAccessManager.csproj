@@ -13,4 +13,13 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.4" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="wwwroot\css\users\create.css" />
+    <None Include="wwwroot\css\users\index.css" />
+  </ItemGroup>
+
+	<ItemGroup>
+		<Content Update="web.config" CopyToPublishDirectory="Always" />
+	</ItemGroup>
+
 </Project>
