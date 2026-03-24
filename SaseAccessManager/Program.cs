@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Options;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
@@ -75,7 +76,16 @@ builder.Services.AddControllersWithViews(options =>
     options.SuppressAsyncSuffixInActionNames = true;
 });
 
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 var app = builder.Build();
+
+app.UseForwardedHeaders();
 
 app.Use(async (context, next) =>
 {
@@ -131,6 +141,8 @@ app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
 
+app.UseStaticFiles();
+
 app.UseCookiePolicy();
 
 app.UseAuthentication();
@@ -139,7 +151,5 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.MapRazorPages();
-
-app.UseStaticFiles();
 
 app.Run();
