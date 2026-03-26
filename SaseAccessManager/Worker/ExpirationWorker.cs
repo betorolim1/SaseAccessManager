@@ -27,7 +27,7 @@ namespace SaseAccessManager.Worker
                 try
                 {
                     using var scope = _provider.CreateScope();
-                    var store = scope.ServiceProvider.GetRequiredService<FileUserStore>();
+                    var store = scope.ServiceProvider.GetRequiredService<PostgresUserStore>();
                     var userService = scope.ServiceProvider.GetRequiredService<UserService>();
 
                     var users = await store.GetAll();
@@ -61,7 +61,7 @@ namespace SaseAccessManager.Worker
             }
         }
 
-        private async Task CleanupOldRemovedUsers(FileUserStore store)
+        private async Task CleanupOldRemovedUsers(PostgresUserStore store)
         {
             var retentionDays = _config.GetValue<int>("RetentionDays", 90);
             var limitDate = DateTime.UtcNow.AddDays(-retentionDays);
@@ -81,11 +81,12 @@ namespace SaseAccessManager.Worker
                 return;
             }
 
-            _logger.LogInformation("Removendo {Count} usuários antigos do JSON.", toDelete.Count);
+            _logger.LogInformation("Removendo {Count} usuários antigos do banco.", toDelete.Count);
 
-            var remaining = users.Except(toDelete).ToList();
-
-            await store.SaveAll(remaining);
+            foreach (var user in toDelete)
+            {
+                await store.Remove(user.Id);
+            }
         }
 
         private async Task WaitUntilNextRun(CancellationToken token)

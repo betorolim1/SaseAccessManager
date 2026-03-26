@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
 using SaseAccessManager.Auth;
 using SaseAccessManager.Cache;
+using SaseAccessManager.Data;
 using SaseAccessManager.Options;
 using SaseAccessManager.Services;
 using SaseAccessManager.Worker;
@@ -45,8 +47,12 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddSingleton<ISaseGroupCache, SaseGroupCache>();
-builder.Services.AddSingleton<FileUserStore>();
 builder.Services.AddScoped<UserService>();
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddScoped<PostgresUserStore>();
 
 builder.Services.AddHostedService<ExpirationWorker>();
 

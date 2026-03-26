@@ -14,7 +14,7 @@ namespace SaseAccessManager.Pages.Users;
 [Authorize]
 public class IndexModel : PageModel
 {
-    private readonly FileUserStore _store;
+    private readonly PostgresUserStore _store;
     private readonly UserService _service;
     private readonly ISaseGroupCache _groupCache;
 
@@ -31,7 +31,7 @@ public class IndexModel : PageModel
     public IReadOnlyList<SaseGroupDto> AllGroups { get; private set; } = [];
 
 
-    public IndexModel(FileUserStore store, UserService service, ISaseGroupCache groupCache)
+    public IndexModel(PostgresUserStore store, UserService service, ISaseGroupCache groupCache)
     {
         _store = store;
         _service = service;

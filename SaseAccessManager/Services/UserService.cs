@@ -6,7 +6,7 @@ namespace SaseAccessManager.Services
 {
     public class UserService
     {
-        private readonly FileUserStore _store;
+        private readonly PostgresUserStore _store;
         private readonly ISaseClient _sase;
 
         private static readonly HashSet<string> AzureDomains = new(StringComparer.OrdinalIgnoreCase)
@@ -18,7 +18,7 @@ namespace SaseAccessManager.Services
             "apoio.agro.gov.br"
         };
 
-        public UserService(FileUserStore store, ISaseClient sase)
+        public UserService(PostgresUserStore store, ISaseClient sase)
         {
             _store = store;
             _sase = sase;
@@ -79,8 +79,7 @@ namespace SaseAccessManager.Services
 
             user.SaseUserId = result.UserId!;
 
-            users.Add(user);
-            await _store.SaveAll(users);
+            await _store.Add(user);
 
             return OperationResult<TemporarySaseUser>.Ok(user);
         }
@@ -114,7 +113,7 @@ namespace SaseAccessManager.Services
                 user.ErrorMessage = result.Error;
             }
 
-            await _store.SaveAll(users);
+            await _store.Update(user);
 
             return result.Success
                 ? OperationResult.Ok()
@@ -145,7 +144,7 @@ namespace SaseAccessManager.Services
 
             user.AccessGroups = newGroups;
 
-            await _store.SaveAll(users);
+            await _store.Update(user);
 
             return OperationResult.Ok();
         }
