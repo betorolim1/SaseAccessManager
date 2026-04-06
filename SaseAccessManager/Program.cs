@@ -64,8 +64,6 @@ builder.Services.AddAuthorization(options =>
     options.FallbackPolicy = options.DefaultPolicy;
 });
 
-builder.Services.AddRazorPages();
-
 builder.Services.AddRazorPages(options =>
 {
     options.Conventions.AuthorizeFolder("/");
