@@ -149,6 +149,22 @@ namespace SaseAccessManager.Services
             return OperationResult.Ok();
         }
 
+        public async Task<OperationResult> UpdateExpiration(string id, int durationDays)
+        {
+            var user = await _store.GetById(id);
+
+            if (user == null)
+                return OperationResult.Fail("Usuário não encontrado.");
+
+            if (user.Status != UserStatus.Active)
+                return OperationResult.Fail("Apenas usuários ativos podem ter o prazo alterado.");
+
+            user.ExpiresAt = DateTime.UtcNow.AddDays(durationDays);
+            await _store.Update(user);
+
+            return OperationResult.Ok();
+        }
+
         private static SaseCreateUserRequest BuildSaseRequest(TemporarySaseUser user)
         {
 

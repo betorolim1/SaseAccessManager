@@ -58,6 +58,9 @@ public class CreateModel : PageModel
     [BindProperty]
     public bool IsEdit { get; set; }
 
+    [BindProperty]
+    public string? UserId { get; set; }
+
     [TempData]
     public string? ToastMessage { get; set; }
 
@@ -120,6 +123,7 @@ public class CreateModel : PageModel
         SelectedGroups = user.AccessGroups ?? [];
 
         IsEdit = true;
+        UserId = user.Id;
 
         return Page();
     }
@@ -133,15 +137,23 @@ public class CreateModel : PageModel
 
         if (IsEdit)
         {
-            var result = await _service.UpdateGroups(Email, SelectedGroups);
+            var groupsResult = await _service.UpdateGroups(Email, SelectedGroups);
 
-            if (!result.Success)
+            if (!groupsResult.Success)
             {
-                ModelState.AddModelError("", result.Error!);
+                ModelState.AddModelError("", groupsResult.Error!);
                 return Page();
             }
 
-            ToastMessage = "Grupos atualizados com sucesso.";
+            var expirationResult = await _service.UpdateExpiration(UserId!, DurationDays);
+
+            if (!expirationResult.Success)
+            {
+                ModelState.AddModelError("", expirationResult.Error!);
+                return Page();
+            }
+
+            ToastMessage = "Usuário atualizado com sucesso.";
             ToastType = "success";
 
             return RedirectToPage("/Users/Index");

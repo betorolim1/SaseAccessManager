@@ -61,6 +61,7 @@
 
     <form method="post">
         <input type="hidden" asp-for="IsEdit" value="@Model.IsEdit" />
+        <input type="hidden" asp-for="UserId" />
 
         <div class="form-card">
 
@@ -95,25 +96,24 @@
                 <div class="section-label">Duração do acesso</div>
 
                 <div class="duration-presets">
-                    <button type="button" class="preset-btn is-active" data-days="30" disabled="@Model.IsEdit">30 dias</button>
-                    <button type="button" class="preset-btn" data-days="90" disabled="@Model.IsEdit">90 dias</button>
-                    <button type="button" class="preset-btn" data-days="180" disabled="@Model.IsEdit">180 dias</button>
-                    <button type="button" class="preset-btn" data-days="365" disabled="@Model.IsEdit">365 dias</button>
+                    <button type="button" class="preset-btn" data-days="30">30 dias</button>
+                    <button type="button" class="preset-btn" data-days="90">90 dias</button>
+                    <button type="button" class="preset-btn" data-days="180">180 dias</button>
+                    <button type="button" class="preset-btn" data-days="365">365 dias</button>
                 </div>
 
                 <div class="form-group max-200">
                     <label asp-for="DurationDays" class="form-label">Ou defina manualmente</label>
                     <div class="number-input">
-                        <button type="button" class="num-btn minus" disabled="@Model.IsEdit">−</button>
+                        <button type="button" class="num-btn minus">−</button>
                         <input asp-for="DurationDays"
                                type="number"
                                class="form-input"
                                min="1"
                                max="365"
                                step="1"
-                               placeholder="30"
-                               readonly="@Model.IsEdit" />
-                        <button type="button" class="num-btn plus" disabled="@Model.IsEdit">+</button>
+                               placeholder="30" />
+                        <button type="button" class="num-btn plus">+</button>
                     </div>
                     <span asp-validation-for="DurationDays" class="validation"></span>
                 </div>
@@ -183,61 +183,9 @@
 </div>
 
 <script nonce="@HttpContext.Items["CSP-Nonce"]">
-    showLoading("Carregando grupos...");
 
-window.addEventListener("load", () => {
-    hideLoading();
-});
-
-    // Toast auto-dismiss
-    setTimeout(() => {
-        const t = document.getElementById("toast");
-            if (t) { t.classList.add("toast-hide"); setTimeout(() => t.remove(), 400); }
-    }, 4000);
-
-    // Custom checkbox toggle
-    document.querySelectorAll('.group-item:not(.is-locked)').forEach(item => {
-        item.addEventListener('click', () => {
-            const cb = item.querySelector('input[type="checkbox"]');
-            cb.checked = !cb.checked;
-            item.classList.toggle('is-checked', cb.checked);
-            if (isEdit) checkChanges();
-        });
-    });
-
-    // Edit mode: enable submit only when something changes
-    const isEdit = '@Model.IsEdit'.toLowerCase() === 'true';
-
-    if (isEdit) {
-        const checkboxes = document.querySelectorAll('.group-checkbox');
-        const submitBtn  = document.getElementById('submitBtn');
-        const original   = Array.from(checkboxes).map(cb => cb.checked);
-
-        function checkChanges() {
-            const changed = Array.from(checkboxes).some((cb, i) => cb.checked !== original[i]);
-            submitBtn.disabled = !changed;
-        }
-
-        checkboxes.forEach(cb => cb.addEventListener('change', checkChanges));
-    }
-
-        document.querySelectorAll('.number-input').forEach(wrapper => {
-
-        const input = wrapper.querySelector('input');
-        const plus = wrapper.querySelector('.plus');
-        const minus = wrapper.querySelector('.minus');
-
-        plus.addEventListener('click', () => {
-            input.stepUp();
-        });
-
-        minus.addEventListener('click', () => {
-            input.stepDown();
-        });
-
-    });
-
-        function showLoading(text = "Processando...") {
+    // ── Utilitários (declarar ANTES de usar) ──────────────────────────
+    function showLoading(text = "Processando...") {
         const overlay = document.getElementById("loadingOverlay");
         overlay.querySelector(".loading-text").innerText = text;
         overlay.classList.remove("hidden");
@@ -247,6 +195,79 @@ window.addEventListener("load", () => {
         document.getElementById("loadingOverlay").classList.add("hidden");
     }
 
+    // ── Estado global ─────────────────────────────────────────────────
+    const isEdit = '@Model.IsEdit'.toLowerCase() === 'true';
+    const durationInput = document.getElementById('DurationDays');
+    const presetBtns = document.querySelectorAll('.preset-btn');
+
+    // ── Presets ───────────────────────────────────────────────────────
+    function syncPresets() {
+        const val = durationInput.value;
+        presetBtns.forEach(b => {
+            b.classList.toggle('is-active', b.dataset.days === val);
+        });
+    }
+    
+    function clearPresets() {
+        presetBtns.forEach(b => b.classList.remove('is-active'));
+    }
+
+    // ── checkChanges (precisa existir antes dos listeners) ────────────
+    let checkChanges = () => {};
+
+    if (isEdit) {
+        const checkboxes     = document.querySelectorAll('.group-checkbox');
+        const submitBtn      = document.getElementById('submitBtn');
+        const originalGroups = Array.from(checkboxes).map(cb => cb.checked);
+        const originalDays   = durationInput.value;
+
+        checkChanges = function () {
+            const groupsChanged   = Array.from(checkboxes).some((cb, i) => cb.checked !== originalGroups[i]);
+            const durationChanged = durationInput.value !== originalDays;
+            submitBtn.disabled = !(groupsChanged || durationChanged);
+        };
+
+        checkboxes.forEach(cb => cb.addEventListener('change', checkChanges));
+        durationInput.addEventListener('input', checkChanges);
+        document.querySelectorAll('.num-btn').forEach(btn => {
+            btn.addEventListener('click', () => setTimeout(checkChanges, 10));
+        });
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => setTimeout(checkChanges, 10));
+        });
+    }
+
+    // ── Listeners ─────────────────────────────────────────────────────
+    presetBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            durationInput.value = btn.dataset.days;
+            presetBtns.forEach(b => b.classList.remove('is-active'));
+            btn.classList.add('is-active');
+            checkChanges();
+        });
+    });
+
+    durationInput.addEventListener('input', clearPresets);
+
+    document.querySelectorAll('.num-btn').forEach(btn => {
+        btn.addEventListener('click', () => setTimeout(clearPresets, 10));
+    });
+
+    document.querySelectorAll('.number-input').forEach(wrapper => {
+        const input = wrapper.querySelector('input');
+        wrapper.querySelector('.plus').addEventListener('click', () => input.stepUp());
+        wrapper.querySelector('.minus').addEventListener('click', () => input.stepDown());
+    });
+
+    document.querySelectorAll('.group-item:not(.is-locked)').forEach(item => {
+        item.addEventListener('click', () => {
+            const cb = item.querySelector('input[type="checkbox"]');
+            cb.checked = !cb.checked;
+            item.classList.toggle('is-checked', cb.checked);
+            checkChanges();
+        });
+    });
+
     document.querySelectorAll("form").forEach(form => {
         form.addEventListener("submit", () => {
             showLoading("Processando...");
@@ -254,33 +275,16 @@ window.addEventListener("load", () => {
         });
     });
 
-    // Duration presets
-    const durationInput = document.getElementById('DurationDays');
-    const presetBtns = document.querySelectorAll('.preset-btn');
+    setTimeout(() => {
+        const t = document.getElementById("toast");
+        if (t) { t.classList.add("toast-hide"); setTimeout(() => t.remove(), 400); }
+    }, 4000);
 
-    presetBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            durationInput.value = btn.dataset.days;
+    // ── Init ──────────────────────────────────────────────────────────
+    showLoading("Carregando grupos...");
 
-            presetBtns.forEach(b => b.classList.remove('is-active'));
-            btn.classList.add('is-active');
-        });
+    window.addEventListener("load", () => {
+        hideLoading();
     });
 
-    // Sync presets with manual input & +/- buttons
-    function syncPresets() {
-        const val = durationInput.value;
-        presetBtns.forEach(b => {
-            b.classList.toggle('is-active', b.dataset.days === val);
-        });
-    }
-
-    durationInput.addEventListener('input', syncPresets);
-
-    // Also sync when +/- buttons are clicked
-    document.querySelectorAll('.num-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            setTimeout(syncPresets, 10); // after stepUp/stepDown fires
-        });
-    });
 </script>
