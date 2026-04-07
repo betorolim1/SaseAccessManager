@@ -11,7 +11,7 @@ using SaseAccessManager.Services;
 
 namespace SaseAccessManager.Pages.Users;
 
-//[Authorize]
+[Authorize]
 public class IndexModel : PageModel
 {
     private readonly PostgresUserStore _store;
@@ -74,6 +74,23 @@ public class IndexModel : PageModel
             CookieAuthenticationDefaults.AuthenticationScheme,
             OpenIdConnectDefaults.AuthenticationScheme
         );
+    }
+
+    public async Task<IActionResult> OnPostReactivate(string id, int durationDays = 30)
+    {
+        var result = await _service.Reactivate(id, durationDays);
+
+        if (!result.Success)
+        {
+            ToastMessage = result.Error;
+            ToastType = "error";
+            return RedirectToPage();
+        }
+
+        ToastMessage = "Usuário reativado com sucesso.";
+        ToastType = "success";
+
+        return RedirectToPage();
     }
 
     private async Task LoadUsers()

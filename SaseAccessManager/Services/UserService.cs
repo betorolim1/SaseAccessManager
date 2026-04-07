@@ -221,6 +221,63 @@ namespace SaseAccessManager.Services
             return OperationResult.Ok();
         }
 
+        public async Task<OperationResult<TemporarySaseUser>> Reactivate(string id, int durationDays)
+        {
+            var user = await _store.GetById(id);
+
+            if (user == null)
+                return OperationResult<TemporarySaseUser>.Fail("Usuário não encontrado.");
+
+            if (user.Status == UserStatus.Active)
+                return OperationResult<TemporarySaseUser>.Fail("Usuário já está ativo.");
+
+            // Garante que não existe outro registro ativo com o mesmo email
+            var users = await _store.GetAll();
+            var conflito = users.Any(u =>
+                u.Id != id &&
+                u.Email.Equals(user.Email, StringComparison.OrdinalIgnoreCase) &&
+                u.Status == UserStatus.Active);
+
+            if (conflito)
+                return OperationResult<TemporarySaseUser>.Fail(
+                    "Já existe um usuário ativo com este e-mail. Remova-o antes de reativar este registro.");
+
+            var request = BuildSaseRequest(user);
+            var result = await _sase.CreateUser(request);
+
+            if (result.AlreadyExists)
+            {
+                return OperationResult<TemporarySaseUser>.Fail(
+                    "O usuário já existe no SASE. Para reativá-lo no sistema, acesse 'Novo usuário', informe o e-mail dele e confirme a importação quando solicitado.");
+            }
+            else if (!result.Success)
+            {
+                return OperationResult<TemporarySaseUser>.Fail($"Erro ao recriar usuário no SASE: {result.Error}");
+            }
+            else
+            {
+                user.SaseUserId = result.UserId!;
+            }
+
+            // Readiciona nos grupos
+            foreach (var groupId in user.AccessGroups ?? [])
+            {
+                var add = await _sase.AddUserToGroup(groupId, user.SaseUserId);
+                if (!add.Success)
+                    return OperationResult<TemporarySaseUser>.Fail($"Usuário recriado no SASE, mas erro ao adicionar ao grupo: {add.Error}");
+            }
+
+            user.Status = UserStatus.Active;
+            user.ExpiresAt = DateTime.UtcNow.AddDays(durationDays);
+            user.ErrorMessage = null;
+            user.LastRemovalAttempt = null;
+            user.CreatedAt = DateTime.UtcNow;
+
+            await _store.Update(user);
+
+            return OperationResult<TemporarySaseUser>.Ok(user);
+        }
+
         private static SaseCreateUserRequest BuildSaseRequest(TemporarySaseUser user)
         {
 

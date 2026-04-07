@@ -19,6 +19,7 @@
     --amber: #ffb547;
     --radius: 12px;
     --shadow: 0 8px 32px rgba(0,0,0,0.45);
+    --surface3: #202c42;
 }
 
 body {
@@ -808,6 +809,199 @@ tbody td:last-child {
     padding: 1px 6px;
     margin-left: auto;
     font-weight: 500;
+}
+
+.btn-reactivate {
+    background: transparent;
+    color: var(--green);
+    border: 1px solid rgba(34, 212, 122, 0.25);
+    font-size: 12px;
+    padding: 6px 12px;
+}
+
+.btn-reactivate:hover {
+    background: rgba(34, 212, 122, 0.1);
+    border-color: rgba(34, 212, 122, 0.5);
+}
+
+/* ── DURATION PRESETS ── */
+.duration-presets {
+    display: flex;
+    gap: 8px;
+    flex-wrap: nowrap;
+}
+
+.preset-btn {
+    flex: 1;
+    padding: 10px 0;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    border-radius: 8px;
+    border: 1px solid var(--border2);
+    background: var(--surface2);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all .18s ease;
+    text-align: center;
+}
+
+    .preset-btn:hover:not(.is-active) {
+        color: var(--text);
+        border-color: rgba(79,140,255,0.4);
+        background: rgba(79,140,255,0.06);
+    }
+
+    .preset-btn.is-active {
+        color: white;
+        border-color: var(--accent);
+        background: rgba(79,140,255,0.14);
+        box-shadow: 0 0 16px rgba(79,140,255,0.18), inset 0 0 0 1px rgba(79,140,255,0.3);
+    }
+
+/* ── NUMBER INPUT ── */
+.number-input {
+    display: flex;
+    align-items: stretch;
+    width: 200px;
+}
+
+    .number-input .form-input {
+        text-align: center;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+        flex: 1;
+    }
+
+.num-btn {
+    width: 38px;
+    border: 1px solid var(--border2);
+    background: var(--surface2);
+    color: var(--text);
+    font-size: 18px;
+    cursor: pointer;
+    transition: background .15s;
+    font-family: inherit;
+}
+
+    .num-btn:hover {
+        background: var(--surface3, #202c42);
+    }
+
+    .num-btn.minus {
+        border-radius: 9px 0 0 9px;
+    }
+
+    .num-btn.plus {
+        border-radius: 0 9px 9px 0;
+    }
+
+.modal-body {
+    font-size: 13.5px;
+    color: var(--muted);
+    line-height: 1.6;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* ── MODAL ── */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9998;
+}
+
+    .modal-overlay.hidden {
+        display: none;
+    }
+
+.modal-box {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 36px 32px 28px;
+    max-width: 480px;
+    width: 90%;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.modal-icon {
+    font-size: 32px;
+    text-align: center;
+}
+
+.modal-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+    text-align: center;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.modal-groups-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--muted);
+}
+
+/* ── FORM INPUT (necessário para o number-input dentro do modal) ── */
+.form-input {
+    width: 100%;
+    padding: 9px 14px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 9px;
+    font-size: 13px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    transition: border-color .15s, box-shadow .15s;
+    -webkit-appearance: none;
+}
+
+    .form-input:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(79,140,255,0.15);
+    }
+
+    .form-input[type="number"]::-webkit-inner-spin-button,
+    .form-input[type="number"]::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+    }
+
+.max-200 {
+    max-width: 200px;
+}
+
+/* ── MODAL DURATION ── */
+.modal-duration {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 8px;
+}
+
+.number-input-wrap {
+    max-width: 200px;
 }
 
 @@keyframes spin {

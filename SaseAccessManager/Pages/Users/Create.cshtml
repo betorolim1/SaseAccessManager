@@ -273,7 +273,7 @@
         checkboxes.forEach(cb => cb.addEventListener('change', checkChanges));
         durationInput.addEventListener('input', checkChanges);
         document.querySelectorAll('.num-btn').forEach(btn => {
-            btn.addEventListener('click', () => setTimeout(checkChanges, 10));
+            btn.addEventListener('click', () => setTimeout(syncPresets, 10));
         });
         document.querySelectorAll('.preset-btn').forEach(btn => {
             btn.addEventListener('click', () => setTimeout(checkChanges, 10));
@@ -290,7 +290,7 @@
         });
     });
 
-    durationInput.addEventListener('input', clearPresets);
+    durationInput.addEventListener('input', syncPresets);
 
     document.querySelectorAll('.num-btn').forEach(btn => {
         btn.addEventListener('click', () => setTimeout(clearPresets, 10));

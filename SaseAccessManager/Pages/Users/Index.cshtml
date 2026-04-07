@@ -217,17 +217,22 @@
                                 {
                                     <form method="post" asp-page-handler="Remove" style="display:inline">
                                         <input type="hidden" name="id" value="@u.Id" />
-                                        <button type="submit"
-                                                class="btn btn-danger remove-btn"
-                                                data-email="@u.Email">
+                                        <button type="submit" class="btn btn-danger remove-btn" data-email="@u.Email">
                                             Remover
                                         </button>
                                     </form>
-                                    <a asp-page="/Users/Create"
-                                           asp-route-id="@u.Id"
-                                           class="btn btn-edit">
+                                    <a asp-page="/Users/Create" asp-route-id="@u.Id" class="btn btn-edit">
                                         Editar grupos
                                     </a>
+                                }
+                                else
+                                {
+                                    <button type="button"
+                                            class="btn btn-reactivate reactivate-btn"
+                                            data-email="@u.Email"
+                                            data-id="@u.Id">
+                                        Reativar
+                                    </button>
                                 }
                             </div>
                         </td>
@@ -237,6 +242,49 @@
         </table>
     </div>
 
+    <!-- REACTIVATE MODAL -->
+    <div id="reactivateModal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <div class="modal-icon">♻️</div>
+            <div class="modal-title">Reativar usuário</div>
+            <div class="modal-body">
+                Reativando acesso de <strong id="reactivateEmail"></strong>
+                O usuário será recriado no SASE e voltará a ter acesso aos grupos anteriores.
+
+                <div class="modal-duration">
+                    <div class="modal-groups-label">Duração do acesso</div>
+                    <div class="duration-presets" id="reactivatePresets">
+                        <button type="button" class="preset-btn" data-days="30">30 dias</button>
+                        <button type="button" class="preset-btn" data-days="90">90 dias</button>
+                        <button type="button" class="preset-btn" data-days="180">180 dias</button>
+                        <button type="button" class="preset-btn" data-days="365">365 dias</button>
+                    </div>
+                    <div class="number-input-wrap">
+                        <div class="number-input">
+                            <button type="button" class="num-btn minus" id="reactivateMinus">−</button>
+                            <input type="number"
+                                   id="reactivateDays"
+                                   class="form-input"
+                                   min="1"
+                                   max="365"
+                                   value="30" />
+                            <button type="button" class="num-btn plus" id="reactivatePlus">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" id="cancelReactivateBtn" class="btn btn-ghost">Cancelar</button>
+                <button type="button" id="confirmReactivateBtn" class="btn btn-primary">Reativar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form oculto para reativação -->
+    <form id="reactivateForm" method="post" asp-page-handler="Reactivate" style="display:none">
+        <input type="hidden" id="reactivateId" name="id" />
+        <input type="hidden" id="reactivateDaysField" name="durationDays" value="30" />
+    </form>
 </div>
 
 <footer class="footer">
@@ -249,7 +297,20 @@
 </div>
 
 <script nonce="@HttpContext.Items["CSP-Nonce"]">
-        document.querySelectorAll(".remove-btn").forEach(btn => {
+
+    // ── Utilitários ───────────────────────────────────────────────────
+    function showLoading(text = "Processando...") {
+        const overlay = document.getElementById("loadingOverlay");
+        overlay.querySelector(".loading-text").innerText = text;
+        overlay.classList.remove("hidden");
+    }
+
+    function hideLoading() {
+        document.getElementById("loadingOverlay").classList.add("hidden");
+    }
+
+    // ── Remove ────────────────────────────────────────────────────────
+    document.querySelectorAll(".remove-btn").forEach(btn => {
         btn.addEventListener("click", function (e) {
             const email = this.dataset.email;
             if (!confirm(`Remover acesso de ${email}?`)) {
@@ -258,57 +319,103 @@
         });
     });
 
+    // ── Refresh ───────────────────────────────────────────────────────
     document.getElementById("refreshBtn")?.addEventListener("click", function () {
         this.innerText = "↻  Atualizando…";
         location.reload();
     });
 
-        setTimeout(() => {
-            const t = document.getElementById("toast");
-            if (t) { t.style.opacity = "0"; setTimeout(() => t.remove(), 400); }
-        }, 4000);
+    // ── Toast ─────────────────────────────────────────────────────────
+    setTimeout(() => {
+        const t = document.getElementById("toast");
+        if (t) { t.style.opacity = "0"; setTimeout(() => t.remove(), 400); }
+    }, 5000);
 
-            function showLoading(text = "Processando...") {
-            const overlay = document.getElementById("loadingOverlay");
-            overlay.querySelector(".loading-text").innerText = text;
-            overlay.classList.remove("hidden");
-        }
-
-        function hideLoading() {
-            document.getElementById("loadingOverlay").classList.add("hidden");
-        }
-
-        document.querySelectorAll("form").forEach(form => {
-            form.addEventListener("submit", () => {
-                showLoading("Processando...");
-                document.body.style.cursor = "wait";
-            });
+    // ── Loading em submits ────────────────────────────────────────────
+    document.querySelectorAll("form").forEach(form => {
+        form.addEventListener("submit", () => {
+            showLoading("Processando...");
+            document.body.style.cursor = "wait";
         });
+    });
 
-            const searchInput = document.getElementById('searchInput');
-        const rows = document.querySelectorAll('tbody tr');
-        const totalCount = document.getElementById('totalCount');
+    // ── Search ────────────────────────────────────────────────────────
+    const searchInput = document.getElementById('searchInput');
+    const rows        = document.querySelectorAll('tbody tr');
+    const totalCount  = document.getElementById('totalCount');
 
-        function updateCount(visible) {
-            const total = rows.length;
-            totalCount.textContent = visible < total
-                ? `${visible} de ${total} usuário(s)`
-                : `${total} usuário(s)`;
-        }
+    function updateCount(visible) {
+        const total = rows.length;
+        totalCount.textContent = visible < total
+            ? `${visible} de ${total} usuário(s)`
+            : `${total} usuário(s)`;
+    }
 
-        updateCount(rows.length);
+    updateCount(rows.length);
 
-        searchInput.addEventListener('input', () => {
-            const term = searchInput.value.toLowerCase().trim();
-
-            let visible = 0;
-            rows.forEach(row => {
-                const text = row.textContent.toLowerCase();
-                const match = !term || text.includes(term);
-                row.classList.toggle('row-hidden', !match);
-                if (match) visible++;
-            });
-
-            updateCount(visible);
+    searchInput.addEventListener('input', () => {
+        const term = searchInput.value.toLowerCase().trim();
+        let visible = 0;
+        rows.forEach(row => {
+            const match = !term || row.textContent.toLowerCase().includes(term);
+            row.classList.toggle('row-hidden', !match);
+            if (match) visible++;
         });
+        updateCount(visible);
+    });
+
+    // ── Reactivate modal ──────────────────────────────────────────────
+    const reactivateModal     = document.getElementById('reactivateModal');
+    const reactivateEmailEl   = document.getElementById('reactivateEmail');
+    const reactivateIdField   = document.getElementById('reactivateId');
+    const reactivateDays      = document.getElementById('reactivateDays');
+    const reactivateDaysField = document.getElementById('reactivateDaysField');
+    const reactivatePresets   = document.querySelectorAll('#reactivatePresets .preset-btn');
+
+    function syncReactivatePresets() {
+        reactivatePresets.forEach(b =>
+            b.classList.toggle('is-active', b.dataset.days === reactivateDays.value));
+    }
+
+    reactivatePresets.forEach(btn => {
+        btn.addEventListener('click', () => {
+            reactivateDays.value = btn.dataset.days;
+            syncReactivatePresets();
+        });
+    });
+
+    reactivateDays.addEventListener('input', () => {
+        reactivatePresets.forEach(b => b.classList.remove('is-active'));
+    });
+
+    document.getElementById('reactivateMinus').addEventListener('click', () => {
+        if (parseInt(reactivateDays.value) > 1) reactivateDays.stepDown();
+        syncReactivatePresets();
+    });
+
+    document.getElementById('reactivatePlus').addEventListener('click', () => {
+        if (parseInt(reactivateDays.value) < 365) reactivateDays.stepUp();
+        syncReactivatePresets();
+    });
+
+    document.querySelectorAll('.reactivate-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            reactivateEmailEl.textContent = btn.dataset.email;
+            reactivateIdField.value       = btn.dataset.id;
+            reactivateDays.value          = '30';
+            syncReactivatePresets();
+            reactivateModal.classList.remove('hidden');
+        });
+    });
+
+    document.getElementById('cancelReactivateBtn').addEventListener('click', () => {
+        reactivateModal.classList.add('hidden');
+    });
+
+    document.getElementById('confirmReactivateBtn').addEventListener('click', () => {
+        reactivateDaysField.value = reactivateDays.value;
+        showLoading("Reativando usuário...");
+        document.getElementById('reactivateForm').submit();
+    });
+
 </script>
