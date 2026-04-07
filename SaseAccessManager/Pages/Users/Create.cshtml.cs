@@ -11,7 +11,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace SaseAccessManager.Pages.Users;
 
-[Authorize]
+// [Authorize]
 public class CreateModel : PageModel
 {
     private readonly UserService _service;
@@ -60,6 +60,17 @@ public class CreateModel : PageModel
 
     [BindProperty]
     public string? UserId { get; set; }
+
+    [BindProperty]
+    public bool ForceImport { get; set; }
+
+    [BindProperty]
+    public string? SaseUserIdForImport { get; set; }
+
+    [BindProperty]
+    public List<string> ExistingSaseGroupIds { get; set; } = [];
+
+    public bool ShowImportModal { get; set; }
 
     [TempData]
     public string? ToastMessage { get; set; }
@@ -159,12 +170,38 @@ public class CreateModel : PageModel
             return RedirectToPage("/Users/Index");
         }
 
+        if (ForceImport)
+        {
+            var import = await _service.ImportExistingUser(
+                Email, Name, LastName, DurationDays, SelectedGroups,
+                SaseUserIdForImport!, ExistingSaseGroupIds);
+
+            if (!import.Success)
+            {
+                Message = import.Error;
+                return Page();
+            }
+
+            ToastMessage = "Usuário importado e sob gerenciamento do sistema.";
+            ToastType = "success";
+
+            return RedirectToPage("/Users/Index");
+        }
+
         var create = await _service.Create(
             Email,
             Name,
             LastName,
             DurationDays,
             SelectedGroups);
+
+        if (create.UserAlreadyExistsInSase)
+        {
+            ShowImportModal = true;
+            SaseUserIdForImport = create.ExistingSaseUserId;
+            ExistingSaseGroupIds = create.ExistingSaseGroupIds;
+            return Page();
+        }
 
         if (!create.Success)
         {

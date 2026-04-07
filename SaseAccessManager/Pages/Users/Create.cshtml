@@ -14,6 +14,9 @@
 @functions {
     string UserInitials(string name) => string.IsNullOrWhiteSpace(name) ? "?" :
         name.Split(' ').Take(2).Aggregate("", (a, w) => a + (w.Length > 0 ? w[0].ToString().ToUpper() : ""));
+
+    string GroupName(string groupId) =>
+        Model.AvailableGroups.FirstOrDefault(g => g.Id == groupId)?.Name ?? groupId;
 }
 
 <!-- TOP BAR -->
@@ -59,9 +62,15 @@
         <div class="alert-error">⚠ @Model.Message</div>
     }
 
-    <form method="post">
+    <form method="post" id="mainForm">
         <input type="hidden" asp-for="IsEdit" value="@Model.IsEdit" />
         <input type="hidden" asp-for="UserId" />
+        <input type="hidden" asp-for="ForceImport" id="forceImportField" value="false" />
+        <input type="hidden" asp-for="SaseUserIdForImport" />
+        @foreach (var gId in Model.ExistingSaseGroupIds)
+        {
+            <input type="hidden" name="ExistingSaseGroupIds" value="@gId" />
+        }
 
         <div class="form-card">
 
@@ -172,6 +181,39 @@
         </div>
     </form>
 </div>
+
+<!-- IMPORT MODAL -->
+<div id="importModal" class="modal-overlay hidden">
+    <div class="modal-box">
+        <div class="modal-icon">⚠️</div>
+        <div class="modal-title">Usuário já existe no SASE</div>
+        <div class="modal-body">
+            Este usuário já possui uma conta ativa no Harmony SASE.<br>
+            Deseja importá-lo para o gerenciamento do sistema?<br><br>
+            Ele será cadastrado no banco de dados e terá seu <strong>tempo de vida controlado por aqui</strong>, sendo removido automaticamente ao expirar.
+
+            @if (Model.ExistingSaseGroupIds.Any())
+            {
+                <div class="modal-groups">
+                    <div class="modal-groups-label">Grupos atuais no SASE:</div>
+                    <div class="modal-groups-list">
+                        @foreach (var gId in Model.ExistingSaseGroupIds)
+                        {
+                            <span class="modal-group-chip">@GroupName(gId)</span>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+        <div class="modal-actions">
+            <a href="/Users" class="btn btn-ghost">Cancelar</a>
+            <button type="button" id="confirmImportBtn" class="btn btn-primary">
+                Importar usuário
+            </button>
+        </div>
+    </div>
+</div>
+
 
 <footer class="footer">
     <span>Desenvolvido pela CGSIC — Coordenação-Geral de Segurança da Informação e Cibersegurança</span>
@@ -285,6 +327,22 @@
 
     window.addEventListener("load", () => {
         hideLoading();
+    });
+
+    // ── Import modal ──────────────────────────────────────────────────
+    const showImportModal = '@Model.ShowImportModal'.toLowerCase() === 'true';
+    const importModal     = document.getElementById('importModal');
+    const confirmImportBtn = document.getElementById('confirmImportBtn');
+    const forceImportField = document.getElementById('forceImportField');
+
+    if (showImportModal) {
+        importModal.classList.remove('hidden');
+    }
+
+    confirmImportBtn.addEventListener('click', () => {
+        forceImportField.value = 'true';
+        showLoading("Importando usuário...");
+        document.getElementById('mainForm').submit();
     });
 
 </script>

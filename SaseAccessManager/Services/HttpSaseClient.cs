@@ -17,7 +17,7 @@ public class HttpSaseClient : ISaseClient
         _auth = auth;
     }
 
-    public async Task<(bool Success, string? UserId, string? Error)> CreateUser(SaseCreateUserRequest request)
+    public async Task<(bool Success, bool AlreadyExists, string? UserId, string? Error)> CreateUser(SaseCreateUserRequest request)
     {
         try
         {
@@ -50,17 +50,47 @@ public class HttpSaseClient : ISaseClient
 
             var content = await response.Content.ReadAsStringAsync();
 
+            if (response.StatusCode == HttpStatusCode.Conflict)
+                return (false, true, null, "USER_ALREADY_EXISTS");
+
             if (!response.IsSuccessStatusCode)
-                return (false, null, $"HTTP {(int)response.StatusCode}: {content}");
+                return (false, false, null, $"HTTP {(int)response.StatusCode}: {content}");
 
             using var json = JsonDocument.Parse(content);
             var id = json.RootElement.GetProperty("id").GetString();
 
-            return (true, id, null);
+            return (true, false, id, null);
         }
         catch (Exception ex)
         {
-            return (false, null, ex.Message);
+            return (false, false, null, ex.Message);
+        }
+    }
+
+    public async Task<SaseUserDto?> GetUserByEmailAsync(string email, CancellationToken ct = default)
+    {
+        try
+        {
+            var q = Uri.EscapeDataString(System.Text.Json.JsonSerializer.Serialize(new { email }));
+            var request = new HttpRequestMessage(HttpMethod.Get,
+                $"users?page=1&limit=25&q={q}&qType=partial");
+
+            var response = await SendAsync(request, ct);
+
+            if (!response.IsSuccessStatusCode)
+                return null;
+
+            var stream = await response.Content.ReadAsStreamAsync(ct);
+            var result = await System.Text.Json.JsonSerializer.DeserializeAsync<SaseUserSearchResponse>(
+                stream, JsonOptions.Default, ct);
+
+            return result?.Data?.FirstOrDefault(u =>
+                u.Email.Equals(email, StringComparison.OrdinalIgnoreCase) &&
+                !u.Terminated);
+        }
+        catch
+        {
+            return null;
         }
     }
 
@@ -85,7 +115,7 @@ public class HttpSaseClient : ISaseClient
         }
     }
 
-    public async Task<IReadOnlyList<SaseGroupDto>> GetGroupsAsync(CancellationToken ct)
+    public async Task<IReadOnlyList<GroupItem>> GetGroupsAsync(CancellationToken ct)
     {
         try
         {
@@ -105,13 +135,7 @@ public class HttpSaseClient : ISaseClient
                 JsonOptions.Default,
                 ct);
 
-            return result?.Data?
-                .Select(g => new SaseGroupDto
-                {
-                    Id = g.Id,
-                    Name = g.Name
-                })
-                .ToList() ?? [];
+            return result?.Data ?? [];
         }
         catch
         {
