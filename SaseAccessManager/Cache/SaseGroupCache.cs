@@ -29,6 +29,7 @@ namespace SaseAccessManager.Cache
 
                 var groups = (await _client.GetGroupsAsync(CancellationToken.None))
                     .Where(g => !string.Equals(g.Name, "All Users", StringComparison.OrdinalIgnoreCase))
+                    .Select(g => new SaseGroupDto { Id = g.Id, Name = g.Name })
                     .ToList();
 
                 if (groups.Count > 0)

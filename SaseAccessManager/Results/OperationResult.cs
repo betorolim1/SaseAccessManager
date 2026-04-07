@@ -15,11 +15,23 @@
     public class OperationResult<T> : OperationResult
     {
         public T? Data { get; init; }
+        public bool UserAlreadyExistsInSase { get; init; }
+        public string? ExistingSaseUserId { get; init; }
+        public List<string> ExistingSaseGroupIds { get; init; } = [];
 
         public static OperationResult<T> Ok(T data)
             => new() { Success = true, Data = data };
 
         public new static OperationResult<T> Fail(string error)
             => new() { Success = false, Error = error };
+
+        public static OperationResult<T> ExistsInSase(string saseUserId, List<string> groupIds)
+            => new()
+            {
+                Success = false,
+                UserAlreadyExistsInSase = true,
+                ExistingSaseUserId = saseUserId,
+                ExistingSaseGroupIds = groupIds
+            };
     }
 }
