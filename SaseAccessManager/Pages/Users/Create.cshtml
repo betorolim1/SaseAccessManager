@@ -66,7 +66,7 @@
         <input type="hidden" asp-for="IsEdit" value="@Model.IsEdit" />
         <input type="hidden" asp-for="UserId" />
         <input type="hidden" asp-for="ForceImport" id="forceImportField" value="false" />
-        <input type="hidden" asp-for="SaseUserIdForImport" />
+        <input type="hidden" asp-for="SaseUserIdForImport" value="@Model.SaseUserIdForImport" />
         @foreach (var gId in Model.ExistingSaseGroupIds)
         {
             <input type="hidden" name="ExistingSaseGroupIds" value="@gId" />
@@ -190,7 +190,8 @@
         <div class="modal-body">
             Este usuário já possui uma conta ativa no Harmony SASE.<br>
             Deseja importá-lo para o gerenciamento do sistema?<br><br>
-            Ele será cadastrado no banco de dados e terá seu <strong>tempo de vida controlado por aqui</strong>, sendo removido automaticamente ao expirar.
+            Ele será cadastrado no banco de dados e terá seu <strong>tempo de vida controlado por aqui</strong>, sendo removido automaticamente ao expirar.<br><br>
+            <span class="modal-warning">⚠ Os grupos selecionados no formulário serão ignorados. O usuário será importado apenas com os grupos que já possui no SASE. Para adicionar ou remover grupos, edite o usuário após a importação.</span>
 
             @if (Model.ExistingSaseGroupIds.Any())
             {

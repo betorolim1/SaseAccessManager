@@ -170,12 +170,6 @@ namespace SaseAccessManager.Services
             string email, string? name, string? lastName, int durationDays,
             List<string> accessGroups, string saseUserId, List<string> alreadyInGroups)
         {
-            accessGroups = accessGroups
-                .Where(g => !string.IsNullOrWhiteSpace(g) && g != "All Users")
-                .Select(g => g.Trim())
-                .Distinct()
-                .ToList();
-
             email = email.Trim().ToLowerInvariant();
 
             var users = await _store.GetAll();
@@ -188,20 +182,10 @@ namespace SaseAccessManager.Services
                 return OperationResult<TemporarySaseUser>
                     .Fail("Já existe um usuário ativo com este e-mail no sistema.");
 
-            // Adiciona apenas grupos que o usuário ainda não possui no SASE
-            var groupsToAdd = accessGroups.Except(alreadyInGroups).ToList();
-
-            foreach (var groupId in groupsToAdd)
-            {
-                var add = await _sase.AddUserToGroup(groupId, saseUserId);
-
-                if (!add.Success)
-                    return OperationResult<TemporarySaseUser>
-                        .Fail($"Erro ao adicionar usuário ao grupo no SASE: {add.Error}");
-            }
-
-            // Registra todos os grupos (existentes + novos) para o sistema gerenciar
-            var allGroups = accessGroups.Union(alreadyInGroups).Distinct().ToList();
+            var groupsToTrack = alreadyInGroups
+                    .Where(g => !string.IsNullOrWhiteSpace(g) && g != "All Users")
+                    .Distinct()
+                    .ToList();
 
             var user = new TemporarySaseUser
             {
@@ -213,7 +197,7 @@ namespace SaseAccessManager.Services
                 ExpiresAt = DateTime.UtcNow.AddDays(durationDays),
                 Status = UserStatus.Active,
                 SaseUserId = saseUserId,
-                AccessGroups = allGroups
+                AccessGroups = groupsToTrack
             };
 
             await _store.Add(user);

@@ -11,7 +11,7 @@ using SaseAccessManager.Services;
 
 namespace SaseAccessManager.Pages.Users;
 
-[Authorize]
+//[Authorize]
 public class IndexModel : PageModel
 {
     private readonly PostgresUserStore _store;

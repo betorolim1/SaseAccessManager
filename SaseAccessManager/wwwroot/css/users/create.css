@@ -703,6 +703,17 @@ body {
     border-radius: 20px;
 }
 
+.modal-warning {
+    display: block;
+    font-size: 0.82rem;
+    color: var(--color-warning, #f59e0b);
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-top: 4px;
+}
+
 
 /* Remove o .duration-row antigo se existir */
 
