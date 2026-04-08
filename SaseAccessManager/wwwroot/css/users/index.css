@@ -1004,6 +1004,25 @@ tbody td:last-child {
     max-width: 200px;
 }
 
+/* Tooltip abre para baixo nas primeiras linhas */
+tbody tr:nth-child(-n+2) .groups-tooltip {
+    bottom: auto;
+    top: calc(100% + 10px);
+    transform: translateX(-50%) translateY(-4px);
+}
+
+tbody tr:nth-child(-n+2) .groups-trigger:hover .groups-tooltip {
+    transform: translateX(-50%) translateY(0);
+}
+
+/* Seta aponta para cima quando tooltip está abaixo */
+tbody tr:nth-child(-n+2) .groups-tooltip::after {
+    top: auto;
+    bottom: 100%;
+    border-top-color: transparent;
+    border-bottom-color: var(--surface2);
+}
+
 @@keyframes spin {
     to {
         transform: rotate(360deg);

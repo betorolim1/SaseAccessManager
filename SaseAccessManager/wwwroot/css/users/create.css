@@ -714,6 +714,14 @@ body {
     margin-top: 4px;
 }
 
+.modal-group-chip--default {
+    background: rgba(107, 122, 153, 0.1);
+    border-color: rgba(107, 122, 153, 0.25);
+    color: var(--muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
 
 /* Remove o .duration-row antigo se existir */
 

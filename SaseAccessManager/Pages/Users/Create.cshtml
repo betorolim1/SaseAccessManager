@@ -3,13 +3,13 @@
 
 <link rel="stylesheet" href="~/css/users/create.css" asp-append-version="true">
 
-@if (TempData["ToastMessage"] != null)
-{
-    <div id="toast" class="toast @(TempData["ToastType"])">
-        @(TempData["ToastType"]?.ToString() == "success" ? "✓" : "✕")
-        @TempData["ToastMessage"]
-    </div>
-}
+    @if (TempData["ToastMessage"] != null)
+    {
+        <div id="toast" class="toast @(TempData["ToastType"])">
+            @(TempData["ToastType"]?.ToString() == "success" ? "✓" : "✕")
+            @TempData["ToastMessage"]
+        </div>
+    }
 
 @functions {
     string UserInitials(string name) => string.IsNullOrWhiteSpace(name) ? "?" :
@@ -67,6 +67,7 @@
         <input type="hidden" asp-for="UserId" />
         <input type="hidden" asp-for="ForceImport" id="forceImportField" value="false" />
         <input type="hidden" asp-for="SaseUserIdForImport" value="@Model.SaseUserIdForImport" />
+        <input type="hidden" id="importDaysField" asp-for="DurationDays" />
         @foreach (var gId in Model.ExistingSaseGroupIds)
         {
             <input type="hidden" name="ExistingSaseGroupIds" value="@gId" />
@@ -160,7 +161,7 @@
                                    type="checkbox"
                                    name="SelectedGroups"
                                    value="@g.Id"
-                                   @(isChecked ? "checked" : "") />
+                            @(isChecked ? "checked" : "") />
                         </label>
                     }
 
@@ -198,6 +199,7 @@
                 <div class="modal-groups">
                     <div class="modal-groups-label">Grupos atuais no SASE:</div>
                     <div class="modal-groups-list">
+                        <span class="modal-group-chip modal-group-chip--default">All Users</span>
                         @foreach (var gId in Model.ExistingSaseGroupIds)
                         {
                             <span class="modal-group-chip">@GroupName(gId)</span>
@@ -205,6 +207,29 @@
                     </div>
                 </div>
             }
+
+            <div class="modal-duration">
+                <div class="modal-groups-label">Duração do acesso</div>
+                <div class="duration-presets" id="importPresets">
+                    <button type="button" class="preset-btn" data-days="30">30 dias</button>
+                    <button type="button" class="preset-btn" data-days="90">90 dias</button>
+                    <button type="button" class="preset-btn" data-days="180">180 dias</button>
+                    <button type="button" class="preset-btn" data-days="365">365 dias</button>
+                </div>
+                <div class="number-input-wrap">
+                    <div class="number-input">
+                        <button type="button" class="num-btn minus" id="importMinus">−</button>
+                        <input type="number"
+                               id="importDays"
+                               class="form-input"
+                               min="1"
+                               max="365"
+                               value="30"
+                               step="1"/>
+                        <button type="button" class="num-btn plus" id="importPlus">+</button>
+                    </div>
+                </div>
+            </div>
         </div>
         <div class="modal-actions">
             <a href="/Users" class="btn btn-ghost">Cancelar</a>
@@ -298,8 +323,16 @@
 
     document.querySelectorAll('.number-input').forEach(wrapper => {
         const input = wrapper.querySelector('input');
-        wrapper.querySelector('.plus').addEventListener('click', () => input.stepUp());
-        wrapper.querySelector('.minus').addEventListener('click', () => input.stepDown());
+        wrapper.querySelector('.plus').addEventListener('click', () => {
+            input.stepUp();
+            if (input.id === 'importDays') syncImportPresets();
+            else syncPresets();
+        });
+        wrapper.querySelector('.minus').addEventListener('click', () => {
+            input.stepDown();
+            if (input.id === 'importDays') syncImportPresets();
+            else syncPresets();
+        });
     });
 
     document.querySelectorAll('.group-item:not(.is-locked)').forEach(item => {
@@ -330,18 +363,37 @@
         hideLoading();
     });
 
-    // ── Import modal ──────────────────────────────────────────────────
-    const showImportModal = '@Model.ShowImportModal'.toLowerCase() === 'true';
-    const importModal     = document.getElementById('importModal');
+        // ── Import modal ──────────────────────────────────────────────
+    const showImportModal  = '@Model.ShowImportModal'.toLowerCase() === 'true';
+    const importModal      = document.getElementById('importModal');
     const confirmImportBtn = document.getElementById('confirmImportBtn');
     const forceImportField = document.getElementById('forceImportField');
+    const importDays       = document.getElementById('importDays');
+    const importDaysField  = document.getElementById('importDaysField');
+    const importPresets    = document.querySelectorAll('#importPresets .preset-btn');
+
+    function syncImportPresets() {
+        importPresets.forEach(b =>
+            b.classList.toggle('is-active', b.dataset.days === importDays.value));
+    }
+
+    importPresets.forEach(btn => {
+        btn.addEventListener('click', () => {
+            importDays.value = btn.dataset.days;
+            syncImportPresets();
+        });
+    });
+
+    importDays.addEventListener('input', syncImportPresets);
 
     if (showImportModal) {
         importModal.classList.remove('hidden');
+        syncImportPresets();
     }
 
     confirmImportBtn.addEventListener('click', () => {
         forceImportField.value = 'true';
+        importDaysField.value  = importDays.value;
         showLoading("Importando usuário...");
         document.getElementById('mainForm').submit();
     });
