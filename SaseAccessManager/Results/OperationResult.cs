@@ -34,4 +34,18 @@
                 ExistingSaseGroupIds = groupIds
             };
     }
+
+    public class BatchUserResult
+    {
+        public string Email { get; init; } = "";
+        public bool Success { get; init; }
+        public string? Error { get; init; }
+    }
+
+    public class BatchOperationResult
+    {
+        public List<BatchUserResult> Results { get; init; } = [];
+        public int SuccessCount => Results.Count(r => r.Success);
+        public int FailCount => Results.Count(r => !r.Success);
+    }
 }

@@ -75,31 +75,37 @@
 
         <div class="form-card">
 
-            <!-- SECTION: Dados do usuário -->
-            <div class="card-section">
-                <div class="section-label">Dados do usuário</div>
-                <div class="form-grid">
-
-                    <div class="form-group span-2">
-                        <label asp-for="Email" class="form-label"></label>
-                        <input asp-for="Email" class="form-input" placeholder="usuario@empresa.com" readonly="@Model.IsEdit" />
-                        <span asp-validation-for="Email" class="validation"></span>
+            @if (Model.IsEdit)
+            {
+                <div class="card-section">
+                    <div class="section-label">Dados do usuário</div>
+                    <div class="form-grid">
+                        <div class="form-group span-2">
+                            <label asp-for="Email" class="form-label"></label>
+                            <input asp-for="Email" class="form-input" readonly="true" />
+                            <span asp-validation-for="Email" class="validation"></span>
+                        </div>
+                        <div class="form-group">
+                            <label asp-for="Name" class="form-label"></label>
+                            <input asp-for="Name" class="form-input" readonly="true" />
+                            <span asp-validation-for="Name" class="validation"></span>
+                        </div>
+                        <div class="form-group">
+                            <label asp-for="LastName" class="form-label"></label>
+                            <input asp-for="LastName" class="form-input" readonly="true" />
+                            <span asp-validation-for="LastName" class="validation"></span>
+                        </div>
                     </div>
-
-                    <div class="form-group">
-                        <label asp-for="Name" class="form-label"></label>
-                        <input asp-for="Name" class="form-input" placeholder="Nome" readonly="@Model.IsEdit" />
-                        <span asp-validation-for="Name" class="validation"></span>
-                    </div>
-
-                    <div class="form-group">
-                        <label asp-for="LastName" class="form-label"></label>
-                        <input asp-for="LastName" class="form-input" placeholder="Sobrenome" readonly="@Model.IsEdit" />
-                        <span asp-validation-for="LastName" class="validation"></span>
-                    </div>
-
                 </div>
-            </div>
+            }
+            else
+            {
+                <div class="card-section">
+                    <div class="section-label">Dados do usuário</div>
+                    <div id="batchRows"></div>
+                    <button type="button" class="btn-add-row" id="addRowBtn">+ Adicionar usuário</button>
+                </div>
+            }
 
             <!-- SECTION: Duração do acesso -->
             <div class="card-section">
@@ -183,6 +189,12 @@
     </form>
 </div>
 
+<!-- BATCH FORM -->
+<form id="batchForm" method="post" asp-page-handler="Batch" class="hidden">
+    <div id="batchHiddenFields"></div>
+    <input type="hidden" name="DurationDays" id="batchDurationDays" value="30" />
+</form>
+
 <!-- IMPORT MODAL -->
 <div id="importModal" class="modal-overlay hidden">
     <div class="modal-box">
@@ -225,7 +237,7 @@
                                min="1"
                                max="365"
                                value="30"
-                               step="1"/>
+                               step="1" />
                         <button type="button" class="num-btn plus" id="importPlus">+</button>
                     </div>
                 </div>
@@ -397,5 +409,143 @@
         showLoading("Importando usuário...");
         document.getElementById('mainForm').submit();
     });
+
+
+
+    // ── Batch rows ────────────────────────────────────────────────
+    function addBatchRow() {
+        const container = document.getElementById('batchRows');
+
+        const row = document.createElement('div');
+        row.className = 'batch-row';
+
+        // Grid
+        const grid = document.createElement('div');
+        grid.className = 'batch-row-grid';
+
+        // Email
+        const emailGroup = document.createElement('div');
+        emailGroup.className = 'form-group span-2';
+        const emailLabel = document.createElement('label');
+        emailLabel.className = 'form-label';
+        emailLabel.textContent = 'Email';
+        const emailInput = document.createElement('input');
+        emailInput.type = 'email';
+        emailInput.className = 'form-input batch-email';
+        emailInput.placeholder = 'usuario@empresa.com';
+        emailGroup.appendChild(emailLabel);
+        emailGroup.appendChild(emailInput);
+
+        // Nome
+        const nameGroup = document.createElement('div');
+        nameGroup.className = 'form-group';
+        const nameLabel = document.createElement('label');
+        nameLabel.className = 'form-label';
+        nameLabel.textContent = 'Nome';
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.className = 'form-input batch-name';
+        nameInput.placeholder = 'Nome';
+        nameGroup.appendChild(nameLabel);
+        nameGroup.appendChild(nameInput);
+
+        // Sobrenome
+        const lastNameGroup = document.createElement('div');
+        lastNameGroup.className = 'form-group';
+        const lastNameLabel = document.createElement('label');
+        lastNameLabel.className = 'form-label';
+        lastNameLabel.textContent = 'Sobrenome';
+        const lastNameInput = document.createElement('input');
+        lastNameInput.type = 'text';
+        lastNameInput.className = 'form-input batch-lastname';
+        lastNameInput.placeholder = 'Sobrenome';
+        lastNameGroup.appendChild(lastNameLabel);
+        lastNameGroup.appendChild(lastNameInput);
+
+        grid.appendChild(emailGroup);
+        grid.appendChild(nameGroup);
+        grid.appendChild(lastNameGroup);
+
+        // Botão remover
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'btn-remove-row';
+        removeBtn.title = 'Remover';
+        removeBtn.textContent = '×';
+        removeBtn.addEventListener('click', () => {
+            row.remove();
+            updateRemoveButtons();
+        });
+
+        row.appendChild(grid);
+        row.appendChild(removeBtn);
+
+        container.appendChild(row);
+        updateRemoveButtons();
+    }
+
+    function updateRemoveButtons() {
+        const rows = document.querySelectorAll('.batch-row');
+        rows.forEach(r => {
+            r.querySelector('.btn-remove-row').style.display = rows.length > 1 ? '' : 'none';
+        });
+    }
+
+    // ── Batch submit ──────────────────────────────────────────────
+    if (!isEdit) {
+        const batchSubmitBtn = document.createElement('button');
+        batchSubmitBtn.type = 'button';
+        batchSubmitBtn.className = 'btn btn-primary';
+        batchSubmitBtn.textContent = 'Criar usuário(s)';
+        batchSubmitBtn.id = 'batchSubmitBtn';
+        document.querySelector('.form-actions').appendChild(batchSubmitBtn);
+
+        document.getElementById('submitBtn').style.display = 'none';
+
+        addBatchRow();
+
+        document.getElementById('addRowBtn')?.addEventListener('click', addBatchRow);
+
+        batchSubmitBtn.addEventListener('click', () => {
+            const hiddenContainer = document.getElementById('batchHiddenFields');
+            while (hiddenContainer.firstChild) hiddenContainer.removeChild(hiddenContainer.firstChild);
+
+            const rows = document.querySelectorAll('.batch-row');
+            let hasAny = false;
+
+            const addHidden = (fieldName, value) => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = fieldName;
+                input.value = value;
+                hiddenContainer.appendChild(input);
+            };
+
+            rows.forEach(row => {
+                const email    = row.querySelector('.batch-email').value.trim();
+                const name     = row.querySelector('.batch-name').value.trim();
+                const lastName = row.querySelector('.batch-lastname').value.trim();
+                if (!email) return;
+                hasAny = true;
+                addHidden('BatchEmails', email);
+                addHidden('BatchNames', name);
+                addHidden('BatchLastNames', lastName);
+            });
+
+            if (!hasAny) {
+                alert('Informe ao menos um e-mail.');
+                return;
+            }
+
+            document.querySelectorAll('.group-checkbox:checked').forEach(cb => {
+                addHidden('SelectedGroups', cb.value);
+            });
+
+            document.getElementById('batchDurationDays').value = durationInput.value;
+
+            showLoading("Criando usuário(s)...");
+            document.getElementById('batchForm').submit();
+        });
+    }
 
 </script>

@@ -723,7 +723,77 @@ body {
     gap: 6px;
 }
 
-/* Remove o .duration-row antigo se existir */
+/* ── BATCH ROWS ── */
+.batch-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+    .batch-row:last-child {
+        border-bottom: none;
+    }
+
+.batch-row-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    flex: 1;
+}
+
+.btn-remove-row {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,77,106,0.25);
+    background: transparent;
+    color: var(--red);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 28px;
+    flex-shrink: 0;
+    transition: all .15s;
+}
+
+    .btn-remove-row:hover {
+        background: rgba(255,77,106,0.1);
+        border-color: rgba(255,77,106,0.5);
+    }
+
+.btn-add-row {
+    margin-top: 16px;
+    background: transparent;
+    border: 1px dashed var(--border2);
+    border-radius: 9px;
+    color: var(--muted);
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    padding: 10px 16px;
+    width: 100%;
+    cursor: pointer;
+    transition: all .15s;
+}
+
+    .btn-add-row:hover {
+        color: var(--text);
+        border-color: var(--accent);
+        background: rgba(79,140,255,0.04);
+    }
+
+.batch-row-grid .span-2 {
+    grid-column: 1 / -1;
+}
+
+#batchRows {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
 
 @@keyframes spin {
     to {

@@ -278,6 +278,44 @@ namespace SaseAccessManager.Services
             return OperationResult<TemporarySaseUser>.Ok(user);
         }
 
+        public async Task<BatchOperationResult> CreateBatch(
+            List<(string Email, string? Name, string? LastName)> users,
+            int durationDays,
+            List<string> accessGroups)
+        {
+            var results = new List<BatchUserResult>();
+
+            foreach (var (email, name, lastName) in users)
+            {
+                var create = await Create(email, name, lastName, durationDays, accessGroups);
+
+                if (create.Success)
+                {
+                    results.Add(new BatchUserResult { Email = email, Success = true });
+                }
+                else if (create.UserAlreadyExistsInSase)
+                {
+                    results.Add(new BatchUserResult
+                    {
+                        Email = email,
+                        Success = false,
+                        Error = "Usuário já existe no SASE. Use a criação individual para importá-lo."
+                    });
+                }
+                else
+                {
+                    results.Add(new BatchUserResult
+                    {
+                        Email = email,
+                        Success = false,
+                        Error = create.Error
+                    });
+                }
+            }
+
+            return new BatchOperationResult { Results = results };
+        }
+
         private static SaseCreateUserRequest BuildSaseRequest(TemporarySaseUser user)
         {
 

@@ -51,6 +51,18 @@ public class CreateModel : PageModel
     [BindProperty]
     public List<string> SelectedGroups { get; set; } = [];
 
+    [BindProperty]
+    public bool IsBatch { get; set; }
+
+    [BindProperty]
+    public List<string> BatchEmails { get; set; } = [];
+
+    [BindProperty]
+    public List<string> BatchNames { get; set; } = [];
+
+    [BindProperty]
+    public List<string> BatchLastNames { get; set; } = [];
+
     public string? Message { get; set; }
 
     public IReadOnlyList<SaseGroupDto> AvailableGroups { get; private set; } = [];
@@ -137,6 +149,40 @@ public class CreateModel : PageModel
         UserId = user.Id;
 
         return Page();
+    }
+
+    public async Task<IActionResult> OnPostBatch()
+    {
+        AvailableGroups = await _groupCache.GetAsync();
+
+        var users = BatchEmails
+            .Select((email, i) => (
+                Email: email,
+                Name: i < BatchNames.Count ? BatchNames[i] : null,
+                LastName: i < BatchLastNames.Count ? BatchLastNames[i] : (string?)null
+            ))
+            .Where(u => !string.IsNullOrWhiteSpace(u.Email))
+            .ToList();
+
+        if (users.Count == 0)
+        {
+            ToastMessage = "Adicione ao menos um usuário.";
+            ToastType = "error";
+            return RedirectToPage("/Users/Index");
+        }
+
+        var result = await _service.CreateBatch(users, DurationDays, SelectedGroups);
+
+        if (result.SuccessCount == 0)
+            ToastMessage = $"Nenhum usuário criado. {result.FailCount} falha(s).";
+        else if (result.FailCount == 0)
+            ToastMessage = $"{result.SuccessCount} usuário(s) criado(s) com sucesso.";
+        else
+            ToastMessage = $"{result.SuccessCount} criado(s), {result.FailCount} falha(s).";
+
+        ToastType = result.SuccessCount > 0 ? "success" : "error";
+
+        return RedirectToPage("/Users/Index");
     }
 
     public async Task<IActionResult> OnPost()
