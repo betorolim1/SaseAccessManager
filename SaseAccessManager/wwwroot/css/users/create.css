@@ -725,10 +725,8 @@ body {
 
 /* ── BATCH ROWS ── */
 .batch-row {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 16px 0;
+    position: relative;
+    padding: 16px 0 16px 0;
     border-bottom: 1px solid var(--border);
 }
 
@@ -740,23 +738,24 @@ body {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
-    flex: 1;
+    padding-right: 36px;
 }
 
 .btn-remove-row {
-    width: 28px;
-    height: 28px;
+    position: absolute;
+    top: 16px;
+    right: 0;
+    width: 24px;
+    height: 24px;
     border-radius: 6px;
     border: 1px solid rgba(255,77,106,0.25);
     background: transparent;
     color: var(--red);
-    font-size: 16px;
+    font-size: 14px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-top: 28px;
-    flex-shrink: 0;
     transition: all .15s;
 }
 
