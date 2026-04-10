@@ -189,7 +189,7 @@ public class CreateModel : PageModel
     {
         AvailableGroups = await _groupCache.GetAsync();
 
-        if (!ModelState.IsValid)
+        if (!ForceImport && !ModelState.IsValid)
             return Page();
 
         if (IsEdit)
