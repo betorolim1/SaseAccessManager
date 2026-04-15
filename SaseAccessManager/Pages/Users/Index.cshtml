@@ -41,9 +41,9 @@
 }
 
 @{
-    var activeCount = Model.Users.Count(u => u.Status == UserStatus.Active);
-    var errorCount = Model.Users.Count(u => u.Status == UserStatus.Error);
-    var removedCount = Model.Users.Count(u => u.Status == UserStatus.Removed);
+    var activeCount = Model.Users.Count(u => u.ST_USUARIO == UserStatus.Active);
+    var errorCount = Model.Users.Count(u => u.ST_USUARIO == UserStatus.Error);
+    var removedCount = Model.Users.Count(u => u.ST_USUARIO == UserStatus.Removed);
 }
 
 <!-- TOP BAR -->
@@ -148,9 +148,9 @@
                 }
                 @foreach (var u in Model.Users)
                 {
-                    <tr class="@RowClass(u.Status)">
-                        <td class="cell-email">@u.Email</td>
-                        <td class="cell-name">@u.Name @u.LastName</td>
+                    <tr class="@RowClass(u.ST_USUARIO)">
+                        <td class="cell-email">@u.DS_EMAIL</td>
+                        <td class="cell-name">@u.NM_USUARIO @u.NM_SOBRENOME</td>
                         <td>
                             <div class="groups-trigger">
                                 <svg class="groups-icon" width="16" height="16" viewBox="0 0 24 24"
@@ -161,7 +161,7 @@
                                     <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
                                     <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                                 </svg>
-                                <span class="groups-count">@((u.AccessGroups?.Count ?? 0) + 1)</span>
+                                <span class="groups-count">@((u.DS_GRUPO_ACESSO?.Count ?? 0) + 1)</span>
 
                                 <div class="groups-tooltip">
                                     <div class="tooltip-title">Grupos de acesso</div>
@@ -172,9 +172,9 @@
                                         <span class="tooltip-lock-tag">padrão</span>
                                     </div>
 
-                                    @if (u.AccessGroups != null && u.AccessGroups.Any())
+                                    @if (u.DS_GRUPO_ACESSO != null && u.DS_GRUPO_ACESSO.Any())
                                     {
-                                        @foreach (var gId in u.AccessGroups)
+                                        @foreach (var gId in u.DS_GRUPO_ACESSO)
                                         {
                                             <div class="tooltip-group">
                                                 <span class="tooltip-dot"></span>
@@ -185,15 +185,15 @@
                                 </div>
                             </div>
                         </td>
-                        <td class="cell-date">@u.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                        <td class="cell-date">@u.DH_CRIACAO.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
                         <td>
-                            @if (u.Status == UserStatus.Removed)
+                            @if (u.ST_USUARIO == UserStatus.Removed)
                             {
                                 <span class="expire-na">—</span>
                             }
                             else
                             {
-                                var remaining = u.ExpiresAt - DateTime.UtcNow;
+                                var remaining = u.DH_EXPIRACAO - DateTime.UtcNow;
                                 if (remaining.TotalSeconds <= 0)
                                 {
                                     <span class="expire-expired">Expirado</span>
@@ -209,28 +209,28 @@
                             }
                         </td>
                         <td>
-                            <span class="@BadgeClass(u.Status)">@StatusLabel(u.Status)</span>
+                            <span class="@BadgeClass(u.ST_USUARIO)">@StatusLabel(u.ST_USUARIO)</span>
                         </td>
                         <td>
                             <div class="actions">
-                                @if (u.Status != UserStatus.Removed)
+                                @if (u.ST_USUARIO != UserStatus.Removed)
                                 {
                                     <form method="post" asp-page-handler="Remove" style="display:inline">
-                                        <input type="hidden" name="id" value="@u.Id" />
-                                        <button type="submit" class="btn btn-danger remove-btn" data-email="@u.Email">
+                                        <input type="hidden" name="id" value="@u.ID_USUARIO_SASE" />
+                                        <button type="submit" class="btn btn-danger remove-btn" data-email="@u.DS_EMAIL">
                                             Remover
                                         </button>
                                     </form>
-                                    <a asp-page="/Users/Create" asp-route-id="@u.Id" class="btn btn-edit">
-                                        Editar grupos
+                                    <a asp-page="/Users/Create" asp-route-id="@u.ID_USUARIO_SASE" class="btn btn-edit">
+                                        Editar
                                     </a>
                                 }
                                 else
                                 {
                                     <button type="button"
                                             class="btn btn-reactivate reactivate-btn"
-                                            data-email="@u.Email"
-                                            data-id="@u.Id">
+                                            data-email="@u.DS_EMAIL"
+                                            data-id="@u.ID_USUARIO_SASE">
                                         Reativar
                                     </button>
                                 }

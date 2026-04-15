@@ -33,8 +33,8 @@ namespace SaseAccessManager.Worker
                     var users = await store.GetAll();
 
                     var expired = users
-                        .Where(x => x.Status == UserStatus.Active &&
-                                    x.ExpiresAt <= DateTime.UtcNow)
+                        .Where(x => x.ST_USUARIO == UserStatus.Active &&
+                                    x.DH_EXPIRACAO <= DateTime.UtcNow)
                         .ToList();
 
                     if (expired.Count == 0)
@@ -47,8 +47,8 @@ namespace SaseAccessManager.Worker
 
                         foreach (var user in expired)
                         {
-                            _logger.LogInformation($"Removendo usuário expirado: {user.Email}");
-                            await userService.Remove(user.Id);
+                            _logger.LogInformation($"Removendo usuário expirado: {user.DS_EMAIL}");
+                            await userService.Remove(user.ID_USUARIO_SASE);
                         }
                     }
 
@@ -70,9 +70,9 @@ namespace SaseAccessManager.Worker
 
             var toDelete = users
                 .Where(u =>
-                    u.Status == UserStatus.Removed &&
-                    u.LastRemovalAttempt.HasValue &&
-                    u.LastRemovalAttempt.Value < limitDate)
+                    u.ST_USUARIO == UserStatus.Removed &&
+                    u.DH_TENTATIVA_REMOCAO.HasValue &&
+                    u.DH_TENTATIVA_REMOCAO.Value < limitDate)
                 .ToList();
 
             if (toDelete.Count == 0)
@@ -85,7 +85,7 @@ namespace SaseAccessManager.Worker
 
             foreach (var user in toDelete)
             {
-                await store.Remove(user.Id);
+                await store.Remove(user.ID_USUARIO_SASE);
             }
         }
 

@@ -67,7 +67,7 @@
         <input type="hidden" asp-for="UserId" />
         <input type="hidden" asp-for="ForceImport" id="forceImportField" value="false" />
         <input type="hidden" asp-for="SaseUserIdForImport" value="@Model.SaseUserIdForImport" />
-        <input type="hidden" id="importDaysField" asp-for="DurationDays" />
+        <input type="hidden" id="importDaysField" name="ImportDurationDays" value="@Model.DurationDays" />
         @if (!Model.IsEdit)
         {
             <input type="hidden" id="Email" name="Email" value="@Model.Email" />
@@ -411,7 +411,7 @@
 
      confirmImportBtn.addEventListener('click', () => {
          forceImportField.value = 'true';
-         importDaysField.value  = importDays.value;
+         durationInput.value  = importDays.value;
          showLoading("Importando usuário...");
          document.getElementById('mainForm').submit();
      });

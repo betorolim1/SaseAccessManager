@@ -15,39 +15,39 @@ namespace SaseAccessManager.Services
 
         public async Task<List<TemporarySaseUser>> GetAll()
         {
-            return await _db.Users.ToListAsync();
+            return await _db.S_USUARIO_SASE.ToListAsync();
         }
 
         public async Task SaveAll(List<TemporarySaseUser> users)
         {
-            _db.Users.RemoveRange(_db.Users);
-            _db.Users.AddRange(users);
+            _db.S_USUARIO_SASE.RemoveRange(_db.S_USUARIO_SASE);
+            _db.S_USUARIO_SASE.AddRange(users);
             await _db.SaveChangesAsync();
         }
 
         public async Task Add(TemporarySaseUser user)
         {
-            _db.Users.Add(user);
+            _db.S_USUARIO_SASE.Add(user);
             await _db.SaveChangesAsync();
         }
 
         public async Task Update(TemporarySaseUser user)
         {
-            _db.Users.Update(user);
+            _db.S_USUARIO_SASE.Update(user);
             await _db.SaveChangesAsync();
         }
 
         public async Task<TemporarySaseUser?> GetById(string id)
         {
-            return await _db.Users.FindAsync(id);
+            return await _db.S_USUARIO_SASE.FindAsync(id);
         }
 
         public async Task Remove(string id)
         {
-            var user = await _db.Users.FindAsync(id);
+            var user = await _db.S_USUARIO_SASE.FindAsync(id);
             if (user != null)
             {
-                _db.Users.Remove(user);
+                _db.S_USUARIO_SASE.Remove(user);
                 await _db.SaveChangesAsync();
             }
         }

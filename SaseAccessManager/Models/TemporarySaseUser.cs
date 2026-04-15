@@ -9,24 +9,24 @@
 
     public class TemporarySaseUser
     {
-        public string Id { get; set; }
+        public string ID_USUARIO_SASE { get; set; }
 
-        public string Email { get; set; } = default!;
+        public string DS_EMAIL { get; set; } = default!;
 
-        public string Name { get; set; } = default!;
-        public string? LastName { get; set; }
+        public string NM_USUARIO { get; set; } = default!;
+        public string? NM_SOBRENOME { get; set; }
 
-        public DateTime CreatedAt { get; set; }
-        public DateTime ExpiresAt { get; set; }
+        public DateTime DH_CRIACAO { get; set; }
+        public DateTime DH_EXPIRACAO { get; set; }
 
-        public UserStatus Status { get; set; }
+        public UserStatus ST_USUARIO { get; set; }
 
-        public string? SaseUserId { get; set; }
+        public string? ID_USUARIO_PERIMETER { get; set; }
 
-        public DateTime? LastRemovalAttempt { get; set; }
+        public DateTime? DH_TENTATIVA_REMOCAO { get; set; }
 
-        public string? ErrorMessage { get; set; }
+        public string? DS_ERRO { get; set; }
 
-        public List<string> AccessGroups { get; set; } = [];
+        public List<string> DS_GRUPO_ACESSO { get; set; } = [];
     }
 }

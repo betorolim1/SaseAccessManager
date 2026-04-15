@@ -130,23 +130,23 @@ public class CreateModel : PageModel
 
         var users = await _service.List();
 
-        var user = users.FirstOrDefault(u => u.Id == id);
+        var user = users.FirstOrDefault(u => u.ID_USUARIO_SASE == id);
 
         if (user == null)
             return RedirectToPage("/Users/Index");
 
-        Email = user.Email;
-        Name = user.Name ?? "";
-        LastName = user.LastName ?? "";
+        Email = user.DS_EMAIL;
+        Name = user.NM_USUARIO ?? "";
+        LastName = user.NM_SOBRENOME ?? "";
         DurationDays = Math.Max(
             1,
-            (int)Math.Ceiling((user.ExpiresAt - DateTime.UtcNow).TotalDays)
+            (int)Math.Ceiling((user.DH_EXPIRACAO - DateTime.UtcNow).TotalDays)
         );
 
-        SelectedGroups = user.AccessGroups ?? [];
+        SelectedGroups = user.DS_GRUPO_ACESSO ?? [];
 
         IsEdit = true;
-        UserId = user.Id;
+        UserId = user.ID_USUARIO_SASE;
 
         return Page();
     }

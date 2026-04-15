@@ -98,8 +98,8 @@ public class IndexModel : PageModel
         AllGroups = await _groupCache.GetAsync();
 
         Users = (await _store.GetAll())
-        .OrderBy(u => u.Status == UserStatus.Removed ? 1 : 0)
-        .ThenByDescending(u => u.CreatedAt)
+        .OrderBy(u => u.ST_USUARIO == UserStatus.Removed ? 1 : 0)
+        .ThenByDescending(u => u.DH_CRIACAO)
         .ToList();
     }
 }

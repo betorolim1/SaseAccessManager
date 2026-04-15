@@ -38,8 +38,8 @@ namespace SaseAccessManager.Services
             email = email.Trim().ToLowerInvariant();
 
             var alreadyActive = users.Any(u =>
-                u.Email.Equals(email, StringComparison.OrdinalIgnoreCase) &&
-                u.Status == UserStatus.Active);
+                u.DS_EMAIL.Equals(email, StringComparison.OrdinalIgnoreCase) &&
+                u.ST_USUARIO == UserStatus.Active);
 
             if (alreadyActive)
                 return OperationResult<TemporarySaseUser>
@@ -47,14 +47,14 @@ namespace SaseAccessManager.Services
 
             var user = new TemporarySaseUser
             {
-                Id = Guid.NewGuid().ToString(),
-                Email = email,
-                Name = name,
-                LastName = lastName,
-                CreatedAt = DateTime.UtcNow,
-                ExpiresAt = DateTime.UtcNow.AddDays(durationDays),
-                Status = UserStatus.Active,
-                AccessGroups = accessGroups
+                ID_USUARIO_SASE = Guid.NewGuid().ToString(),
+                DS_EMAIL = email,
+                NM_USUARIO = name,
+                NM_SOBRENOME = lastName,
+                DH_CRIACAO = DateTime.UtcNow,
+                DH_EXPIRACAO = DateTime.UtcNow.AddDays(durationDays),
+                ST_USUARIO = UserStatus.Active,
+                DS_GRUPO_ACESSO = accessGroups
             };
 
             var request = BuildSaseRequest(user);
@@ -94,7 +94,7 @@ namespace SaseAccessManager.Services
                 }
             }
 
-            user.SaseUserId = result.UserId!;
+            user.ID_USUARIO_PERIMETER = result.UserId!;
 
             await _store.Add(user);
 
@@ -108,26 +108,26 @@ namespace SaseAccessManager.Services
         {
             var users = await _store.GetAll();
 
-            var user = users.FirstOrDefault(x => x.Id == id);
+            var user = users.FirstOrDefault(x => x.ID_USUARIO_SASE == id);
             if (user == null)
                 return OperationResult.Fail("Usuário não encontrado.");
 
-            if (user.Status == UserStatus.Removed)
+            if (user.ST_USUARIO == UserStatus.Removed)
                 return OperationResult.Ok();
 
-            var result = await _sase.DeleteUser(user.SaseUserId!);
+            var result = await _sase.DeleteUser(user.ID_USUARIO_PERIMETER!);
 
-            user.LastRemovalAttempt = DateTime.UtcNow;
+            user.DH_TENTATIVA_REMOCAO = DateTime.UtcNow;
 
             if (result.Success)
             {
-                user.Status = UserStatus.Removed;
-                user.ErrorMessage = null;
+                user.ST_USUARIO = UserStatus.Removed;
+                user.DS_ERRO = null;
             }
             else
             {
-                user.Status = UserStatus.Error;
-                user.ErrorMessage = result.Error;
+                user.ST_USUARIO = UserStatus.Error;
+                user.DS_ERRO = result.Error;
             }
 
             await _store.Update(user);
@@ -142,24 +142,24 @@ namespace SaseAccessManager.Services
             var users = await _store.GetAll();
 
             var user = users.FirstOrDefault(u =>
-                u.Email.Equals(email, StringComparison.OrdinalIgnoreCase) &&
-                u.Status == UserStatus.Active);
+                u.DS_EMAIL.Equals(email, StringComparison.OrdinalIgnoreCase) &&
+                u.ST_USUARIO == UserStatus.Active);
 
             if (user == null)
                 return OperationResult.Fail("Usuário não encontrado.");
 
-            var current = user.AccessGroups ?? [];
+            var current = user.DS_GRUPO_ACESSO ?? [];
 
             var toAdd = newGroups.Except(current).ToList();
             var toRemove = current.Except(newGroups).ToList();
 
             foreach (var g in toAdd)
-                await _sase.AddUserToGroup(g, user.SaseUserId!);
+                await _sase.AddUserToGroup(g, user.ID_USUARIO_PERIMETER!);
 
             foreach (var g in toRemove)
-                await _sase.RemoveUserFromGroup(g, user.SaseUserId!);
+                await _sase.RemoveUserFromGroup(g, user.ID_USUARIO_PERIMETER!);
 
-            user.AccessGroups = newGroups;
+            user.DS_GRUPO_ACESSO = newGroups;
 
             await _store.Update(user);
 
@@ -175,8 +175,8 @@ namespace SaseAccessManager.Services
             var users = await _store.GetAll();
 
             var alreadyActive = users.Any(u =>
-                u.Email.Equals(email, StringComparison.OrdinalIgnoreCase) &&
-                u.Status == UserStatus.Active);
+                u.DS_EMAIL.Equals(email, StringComparison.OrdinalIgnoreCase) &&
+                u.ST_USUARIO == UserStatus.Active);
 
             if (alreadyActive)
                 return OperationResult<TemporarySaseUser>
@@ -189,15 +189,15 @@ namespace SaseAccessManager.Services
 
             var user = new TemporarySaseUser
             {
-                Id = Guid.NewGuid().ToString(),
-                Email = email,
-                Name = name,
-                LastName = lastName,
-                CreatedAt = DateTime.UtcNow,
-                ExpiresAt = DateTime.UtcNow.AddDays(durationDays),
-                Status = UserStatus.Active,
-                SaseUserId = saseUserId,
-                AccessGroups = groupsToTrack
+                ID_USUARIO_SASE = Guid.NewGuid().ToString(),
+                DS_EMAIL = email,
+                NM_USUARIO = name,
+                NM_SOBRENOME = lastName,
+                DH_CRIACAO = DateTime.UtcNow,
+                DH_EXPIRACAO = DateTime.UtcNow.AddDays(durationDays),
+                ST_USUARIO = UserStatus.Active,
+                ID_USUARIO_PERIMETER = saseUserId,
+                DS_GRUPO_ACESSO = groupsToTrack
             };
 
             await _store.Add(user);
@@ -212,10 +212,10 @@ namespace SaseAccessManager.Services
             if (user == null)
                 return OperationResult.Fail("Usuário não encontrado.");
 
-            if (user.Status != UserStatus.Active)
+            if (user.ST_USUARIO != UserStatus.Active)
                 return OperationResult.Fail("Apenas usuários ativos podem ter o prazo alterado.");
 
-            user.ExpiresAt = DateTime.UtcNow.AddDays(durationDays);
+            user.DH_EXPIRACAO = DateTime.UtcNow.AddDays(durationDays);
             await _store.Update(user);
 
             return OperationResult.Ok();
@@ -228,15 +228,15 @@ namespace SaseAccessManager.Services
             if (user == null)
                 return OperationResult<TemporarySaseUser>.Fail("Usuário não encontrado.");
 
-            if (user.Status == UserStatus.Active)
+            if (user.ST_USUARIO == UserStatus.Active)
                 return OperationResult<TemporarySaseUser>.Fail("Usuário já está ativo.");
 
             // Garante que não existe outro registro ativo com o mesmo email
             var users = await _store.GetAll();
             var conflito = users.Any(u =>
-                u.Id != id &&
-                u.Email.Equals(user.Email, StringComparison.OrdinalIgnoreCase) &&
-                u.Status == UserStatus.Active);
+                u.ID_USUARIO_SASE != id &&
+                u.DS_EMAIL.Equals(user.DS_EMAIL, StringComparison.OrdinalIgnoreCase) &&
+                u.ST_USUARIO == UserStatus.Active);
 
             if (conflito)
                 return OperationResult<TemporarySaseUser>.Fail(
@@ -256,22 +256,22 @@ namespace SaseAccessManager.Services
             }
             else
             {
-                user.SaseUserId = result.UserId!;
+                user.ID_USUARIO_PERIMETER = result.UserId!;
             }
 
             // Readiciona nos grupos
-            foreach (var groupId in user.AccessGroups ?? [])
+            foreach (var groupId in user.DS_GRUPO_ACESSO ?? [])
             {
-                var add = await _sase.AddUserToGroup(groupId, user.SaseUserId);
+                var add = await _sase.AddUserToGroup(groupId, user.ID_USUARIO_PERIMETER);
                 if (!add.Success)
                     return OperationResult<TemporarySaseUser>.Fail($"Usuário recriado no SASE, mas erro ao adicionar ao grupo: {add.Error}");
             }
 
-            user.Status = UserStatus.Active;
-            user.ExpiresAt = DateTime.UtcNow.AddDays(durationDays);
-            user.ErrorMessage = null;
-            user.LastRemovalAttempt = null;
-            user.CreatedAt = DateTime.UtcNow;
+            user.ST_USUARIO = UserStatus.Active;
+            user.DH_EXPIRACAO = DateTime.UtcNow.AddDays(durationDays);
+            user.DS_ERRO = null;
+            user.DH_TENTATIVA_REMOCAO = null;
+            user.DH_CRIACAO = DateTime.UtcNow;
 
             await _store.Update(user);
 
@@ -319,17 +319,17 @@ namespace SaseAccessManager.Services
         private static SaseCreateUserRequest BuildSaseRequest(TemporarySaseUser user)
         {
 
-            var isGov = IsGovEmail(user.Email);
+            var isGov = IsGovEmail(user.DS_EMAIL);
 
             return new SaseCreateUserRequest
             {
                 IdpType = isGov ? "azureAD" : "database",
                 EmailVerified = isGov,
-                Email = user.Email,
+                Email = user.DS_EMAIL,
                 ProfileData = new SaseProfileData
                 {
-                    FirstName = user.Name,
-                    LastName = user.LastName ?? "",
+                    FirstName = user.NM_USUARIO,
+                    LastName = user.NM_SOBRENOME ?? "",
                     RoleName = "Member"
                 }
             };
