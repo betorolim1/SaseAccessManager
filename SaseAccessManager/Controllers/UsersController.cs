@@ -38,7 +38,7 @@ namespace SaseAccessManager.Controllers
             => Ok(await _service.List());
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(string id)
+        public async Task<IActionResult> Delete(Guid id)
         {
             var result = await _service.Remove(id);
 

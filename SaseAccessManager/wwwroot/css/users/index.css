@@ -531,6 +531,7 @@ tbody td:last-child {
     animation: slideIn 0.3s cubic-bezier(.22,1,.36,1);
     backdrop-filter: blur(8px);
     transition: opacity .3s;
+    white-space: pre-line;
 }
 
     .toast.success {

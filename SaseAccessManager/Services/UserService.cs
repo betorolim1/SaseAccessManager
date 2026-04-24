@@ -45,9 +45,18 @@ namespace SaseAccessManager.Services
                 return OperationResult<TemporarySaseUser>
                     .Fail("Já existe um usuário ativo com este e-mail.");
 
+            if (email.Length > 254)
+                return OperationResult<TemporarySaseUser>.Fail("Email excede o limite.");
+
+            if (name?.Length > 100)
+                return OperationResult<TemporarySaseUser>.Fail("Nome excede o limite.");
+
+            if (lastName?.Length > 100)
+                return OperationResult<TemporarySaseUser>.Fail("Sobrenome excede o limite.");
+
             var user = new TemporarySaseUser
             {
-                ID_USUARIO_SASE = Guid.NewGuid().ToString(),
+                ID_USUARIO_SASE = Guid.NewGuid(),
                 DS_EMAIL = email,
                 NM_USUARIO = name,
                 NM_SOBRENOME = lastName,
@@ -81,7 +90,13 @@ namespace SaseAccessManager.Services
                 return OperationResult<TemporarySaseUser>
                     .Fail($"Erro ao criar usuário no SASE: {result.Error}");
 
-            var userId = result.UserId!;
+            if (result.UserId is null)
+            {
+                return OperationResult<TemporarySaseUser>
+                    .Fail("UserId não retornado pelo SASE.");
+            }
+
+            var userId = result.UserId;
 
             foreach (var groupId in accessGroups)
             {
@@ -104,7 +119,7 @@ namespace SaseAccessManager.Services
         public async Task<List<TemporarySaseUser>> List()
             => await _store.GetAll();
 
-        public async Task<OperationResult> Remove(string id)
+        public async Task<OperationResult> Remove(Guid id)
         {
             var users = await _store.GetAll();
 
@@ -189,7 +204,7 @@ namespace SaseAccessManager.Services
 
             var user = new TemporarySaseUser
             {
-                ID_USUARIO_SASE = Guid.NewGuid().ToString(),
+                ID_USUARIO_SASE = Guid.NewGuid(),
                 DS_EMAIL = email,
                 NM_USUARIO = name,
                 NM_SOBRENOME = lastName,
@@ -205,7 +220,7 @@ namespace SaseAccessManager.Services
             return OperationResult<TemporarySaseUser>.Ok(user);
         }
 
-        public async Task<OperationResult> UpdateExpiration(string id, int durationDays)
+        public async Task<OperationResult> UpdateExpiration(Guid id, int durationDays)
         {
             var user = await _store.GetById(id);
 
@@ -221,7 +236,7 @@ namespace SaseAccessManager.Services
             return OperationResult.Ok();
         }
 
-        public async Task<OperationResult<TemporarySaseUser>> Reactivate(string id, int durationDays)
+        public async Task<OperationResult<TemporarySaseUser>> Reactivate(Guid id, int durationDays)
         {
             var user = await _store.GetById(id);
 

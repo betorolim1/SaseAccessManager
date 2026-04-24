@@ -28,14 +28,14 @@ BEGIN
 
     -- 1. CREATE TABLE
     CREATE TABLE S_USUARIO_SASE (
-        ID_USUARIO_SASE      TEXT                     NOT NULL,
-        DS_EMAIL             TEXT                     NOT NULL,
-        NM_USUARIO           TEXT                     NOT NULL,
-        NM_SOBRENOME         TEXT,
+        ID_USUARIO_SASE      UUID                     NOT NULL,
+        DS_EMAIL             VARCHAR(254)                     NOT NULL,
+        NM_USUARIO           VARCHAR(100)                     NOT NULL,
+        NM_SOBRENOME         VARCHAR(100),
         DH_CRIACAO           TIMESTAMP WITH TIME ZONE NOT NULL,
         DH_EXPIRACAO         TIMESTAMP WITH TIME ZONE NOT NULL,
-        ST_USUARIO           TEXT                     NOT NULL,
-        ID_USUARIO_PERIMETER TEXT,
+        ST_USUARIO           VARCHAR(20)                     NOT NULL,
+        ID_USUARIO_PERIMETER VARCHAR(50),
         DH_TENTATIVA_REMOCAO TIMESTAMP WITH TIME ZONE,
         DS_ERRO              TEXT,
         DS_GRUPO_ACESSO      JSONB                    NOT NULL

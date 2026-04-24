@@ -71,7 +71,7 @@ public class CreateModel : PageModel
     public bool IsEdit { get; set; }
 
     [BindProperty]
-    public string? UserId { get; set; }
+    public Guid? UserId { get; set; }
 
     [BindProperty]
     public bool ForceImport { get; set; }
@@ -121,11 +121,11 @@ public class CreateModel : PageModel
         );
     }
 
-    public async Task<IActionResult> OnGet(string? id)
+    public async Task<IActionResult> OnGet(Guid? id)
     {
         AvailableGroups = await _groupCache.GetAsync();
 
-        if (string.IsNullOrWhiteSpace(id))
+        if (id is null || id == Guid.Empty)
             return Page();
 
         var users = await _service.List();
@@ -173,14 +173,24 @@ public class CreateModel : PageModel
 
         var result = await _service.CreateBatch(users, DurationDays, SelectedGroups);
 
-        if (result.SuccessCount == 0)
-            ToastMessage = $"Nenhum usuário criado. {result.FailCount} falha(s).";
-        else if (result.FailCount == 0)
+        if (result.FailCount == 0)
+        {
             ToastMessage = $"{result.SuccessCount} usuário(s) criado(s) com sucesso.";
+            ToastType = "success";
+        }
         else
-            ToastMessage = $"{result.SuccessCount} criado(s), {result.FailCount} falha(s).";
+        {
+            var falhas = result.Results
+                .Where(r => !r.Success)
+                .Select(r => $"• {r.Email}: {r.Error ?? "erro desconhecido"}");
 
-        ToastType = result.SuccessCount > 0 ? "success" : "error";
+            var cabecalho = result.SuccessCount == 0
+                ? $"Nenhum usuário criado. {result.FailCount} falha(s):"
+                : $"{result.SuccessCount} criado(s), {result.FailCount} falha(s):";
+
+            ToastMessage = cabecalho + "\n" + string.Join("\n", falhas);
+            ToastType = "error";
+        }
 
         return RedirectToPage("/Users/Index");
     }
@@ -202,7 +212,7 @@ public class CreateModel : PageModel
                 return Page();
             }
 
-            var expirationResult = await _service.UpdateExpiration(UserId!, DurationDays);
+            var expirationResult = await _service.UpdateExpiration(UserId.HasValue ? UserId.Value : Guid.Empty, DurationDays);
 
             if (!expirationResult.Success)
             {

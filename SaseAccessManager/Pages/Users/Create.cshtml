@@ -62,6 +62,19 @@
         <div class="alert-error">⚠ @Model.Message</div>
     }
 
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="alert-error">
+            ⚠
+            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+            {
+                <span>@error.ErrorMessage</span>
+        
+                <br />
+            }
+        </div>
+    }
+
     <form method="post" id="mainForm">
         <input type="hidden" asp-for="IsEdit" value="@Model.IsEdit" />
         <input type="hidden" asp-for="UserId" />
@@ -270,321 +283,323 @@
 
 <script nonce="@HttpContext.Items["CSP-Nonce"]">
 
-     // ── Utilitários (declarar ANTES de usar) ──────────────────────────
-     function showLoading(text = "Processando...") {
-         const overlay = document.getElementById("loadingOverlay");
-         overlay.querySelector(".loading-text").innerText = text;
-         overlay.classList.remove("hidden");
-     }
+         // ── Utilitários (declarar ANTES de usar) ──────────────────────────
+         function showLoading(text = "Processando...") {
+             const overlay = document.getElementById("loadingOverlay");
+             overlay.querySelector(".loading-text").innerText = text;
+             overlay.classList.remove("hidden");
+         }
 
-     function hideLoading() {
-         document.getElementById("loadingOverlay").classList.add("hidden");
-     }
+         function hideLoading() {
+             document.getElementById("loadingOverlay").classList.add("hidden");
+         }
 
-     // ── Estado global ─────────────────────────────────────────────────
-     const isEdit = '@Model.IsEdit'.toLowerCase() === 'true';
-     const durationInput = document.getElementById('DurationDays');
-     const presetBtns = document.querySelectorAll('.preset-btn');
+         // ── Estado global ─────────────────────────────────────────────────
+         const isEdit = '@Model.IsEdit'.toLowerCase() === 'true';
+         const durationInput = document.getElementById('DurationDays');
+         const presetBtns = document.querySelectorAll('.preset-btn');
 
-     // ── Presets ───────────────────────────────────────────────────────
-     function syncPresets() {
-         const val = durationInput.value;
-         presetBtns.forEach(b => {
-             b.classList.toggle('is-active', b.dataset.days === val);
-         });
-     }
+         // ── Presets ───────────────────────────────────────────────────────
+         function syncPresets() {
+             const val = durationInput.value;
+             presetBtns.forEach(b => {
+                 b.classList.toggle('is-active', b.dataset.days === val);
+             });
+         }
     
-     function clearPresets() {
-         presetBtns.forEach(b => b.classList.remove('is-active'));
-     }
-
-     // ── checkChanges (precisa existir antes dos listeners) ────────────
-     let checkChanges = () => {};
-
-     if (isEdit) {
-         const checkboxes     = document.querySelectorAll('.group-checkbox');
-         const submitBtn      = document.getElementById('submitBtn');
-         const originalGroups = Array.from(checkboxes).map(cb => cb.checked);
-         const originalDays   = durationInput.value;
-
-         checkChanges = function () {
-             const groupsChanged   = Array.from(checkboxes).some((cb, i) => cb.checked !== originalGroups[i]);
-             const durationChanged = durationInput.value !== originalDays;
-             submitBtn.disabled = !(groupsChanged || durationChanged);
-         };
-
-         checkboxes.forEach(cb => cb.addEventListener('change', checkChanges));
-         durationInput.addEventListener('input', checkChanges);
-         document.querySelectorAll('.num-btn').forEach(btn => {
-             btn.addEventListener('click', () => setTimeout(syncPresets, 10));
-         });
-         document.querySelectorAll('.preset-btn').forEach(btn => {
-             btn.addEventListener('click', () => setTimeout(checkChanges, 10));
-         });
-     }
-
-     // ── Listeners ─────────────────────────────────────────────────────
-     presetBtns.forEach(btn => {
-         btn.addEventListener('click', () => {
-             durationInput.value = btn.dataset.days;
+         function clearPresets() {
              presetBtns.forEach(b => b.classList.remove('is-active'));
-             btn.classList.add('is-active');
-             checkChanges();
+         }
+
+         // ── checkChanges (precisa existir antes dos listeners) ────────────
+         let checkChanges = () => {};
+
+         if (isEdit) {
+             const checkboxes     = document.querySelectorAll('.group-checkbox');
+             const submitBtn      = document.getElementById('submitBtn');
+             const originalGroups = Array.from(checkboxes).map(cb => cb.checked);
+             const originalDays   = durationInput.value;
+
+             checkChanges = function () {
+                 const groupsChanged   = Array.from(checkboxes).some((cb, i) => cb.checked !== originalGroups[i]);
+                 const durationChanged = durationInput.value !== originalDays;
+                 submitBtn.disabled = !(groupsChanged || durationChanged);
+             };
+
+             checkboxes.forEach(cb => cb.addEventListener('change', checkChanges));
+             durationInput.addEventListener('input', checkChanges);
+             document.querySelectorAll('.preset-btn').forEach(btn => {
+                 btn.addEventListener('click', () => setTimeout(checkChanges, 10));
+             });
+         }
+
+         // ── Listeners ─────────────────────────────────────────────────────
+         presetBtns.forEach(btn => {
+             btn.addEventListener('click', () => {
+                 durationInput.value = btn.dataset.days;
+                 presetBtns.forEach(b => b.classList.remove('is-active'));
+                 btn.classList.add('is-active');
+                 checkChanges();
+             });
          });
-     });
 
-     durationInput.addEventListener('input', syncPresets);
+         durationInput.addEventListener('input', syncPresets);
 
-     document.querySelectorAll('.num-btn').forEach(btn => {
-         btn.addEventListener('click', () => setTimeout(clearPresets, 10));
-     });
-
-     document.querySelectorAll('.number-input').forEach(wrapper => {
-         const input = wrapper.querySelector('input');
-         wrapper.querySelector('.plus').addEventListener('click', () => {
-             input.stepUp();
-             if (input.id === 'importDays') syncImportPresets();
-             else syncPresets();
+         document.querySelectorAll('.num-btn').forEach(btn => {
+             btn.addEventListener('click', () => setTimeout(clearPresets, 10));
          });
-         wrapper.querySelector('.minus').addEventListener('click', () => {
-             input.stepDown();
-             if (input.id === 'importDays') syncImportPresets();
-             else syncPresets();
+
+    document.querySelectorAll('.number-input').forEach(wrapper => {
+        const input = wrapper.querySelector('input');
+        wrapper.querySelector('.plus').addEventListener('click', () => {
+            input.stepUp();
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            if (input.id === 'importDays') syncImportPresets();
+            else syncPresets();
+        });
+        wrapper.querySelector('.minus').addEventListener('click', () => {
+            input.stepDown();
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            if (input.id === 'importDays') syncImportPresets();
+            else syncPresets();
+        });
+    });
+
+         document.querySelectorAll('.group-item:not(.is-locked)').forEach(item => {
+             item.addEventListener('click', () => {
+                 const cb = item.querySelector('input[type="checkbox"]');
+                 cb.checked = !cb.checked;
+                 item.classList.toggle('is-checked', cb.checked);
+                 checkChanges();
+             });
          });
-     });
 
-     document.querySelectorAll('.group-item:not(.is-locked)').forEach(item => {
-         item.addEventListener('click', () => {
-             const cb = item.querySelector('input[type="checkbox"]');
-             cb.checked = !cb.checked;
-             item.classList.toggle('is-checked', cb.checked);
-             checkChanges();
+         document.querySelectorAll("form").forEach(form => {
+             form.addEventListener("submit", () => {
+                 showLoading("Processando...");
+                 document.body.classList.add("loading");
+             });
          });
-     });
 
-     document.querySelectorAll("form").forEach(form => {
-         form.addEventListener("submit", () => {
-             showLoading("Processando...");
-             document.body.classList.add("loading");
+         setTimeout(() => {
+             const t = document.getElementById("toast");
+             if (t) { t.classList.add("toast-hide"); setTimeout(() => t.remove(), 400); }
+         }, 4000);
+
+         // ── Init ──────────────────────────────────────────────────────────
+         showLoading("Carregando grupos...");
+
+         window.addEventListener("load", () => {
+             hideLoading();
          });
-     });
 
-     setTimeout(() => {
-         const t = document.getElementById("toast");
-         if (t) { t.classList.add("toast-hide"); setTimeout(() => t.remove(), 400); }
-     }, 4000);
+             // ── Import modal ──────────────────────────────────────────────
+         const showImportModal  = '@Model.ShowImportModal'.toLowerCase() === 'true';
+         const importModal      = document.getElementById('importModal');
+         const confirmImportBtn = document.getElementById('confirmImportBtn');
+         const forceImportField = document.getElementById('forceImportField');
+         const importDays       = document.getElementById('importDays');
+         const importDaysField  = document.getElementById('importDaysField');
+         const importPresets    = document.querySelectorAll('#importPresets .preset-btn');
 
-     // ── Init ──────────────────────────────────────────────────────────
-     showLoading("Carregando grupos...");
+         function syncImportPresets() {
+             importPresets.forEach(b =>
+                 b.classList.toggle('is-active', b.dataset.days === importDays.value));
+         }
 
-     window.addEventListener("load", () => {
-         hideLoading();
-     });
+         importPresets.forEach(btn => {
+             btn.addEventListener('click', () => {
+                 importDays.value = btn.dataset.days;
+                 syncImportPresets();
+             });
+         });
 
-         // ── Import modal ──────────────────────────────────────────────
-     const showImportModal  = '@Model.ShowImportModal'.toLowerCase() === 'true';
-     const importModal      = document.getElementById('importModal');
-     const confirmImportBtn = document.getElementById('confirmImportBtn');
-     const forceImportField = document.getElementById('forceImportField');
-     const importDays       = document.getElementById('importDays');
-     const importDaysField  = document.getElementById('importDaysField');
-     const importPresets    = document.querySelectorAll('#importPresets .preset-btn');
+         importDays.addEventListener('input', syncImportPresets);
 
-     function syncImportPresets() {
-         importPresets.forEach(b =>
-             b.classList.toggle('is-active', b.dataset.days === importDays.value));
-     }
-
-     importPresets.forEach(btn => {
-         btn.addEventListener('click', () => {
-             importDays.value = btn.dataset.days;
+         if (showImportModal) {
+             importModal.classList.remove('hidden');
              syncImportPresets();
+         }
+
+         confirmImportBtn.addEventListener('click', () => {
+             forceImportField.value = 'true';
+             durationInput.value  = importDays.value;
+             showLoading("Importando usuário...");
+             document.getElementById('mainForm').submit();
          });
-     });
-
-     importDays.addEventListener('input', syncImportPresets);
-
-     if (showImportModal) {
-         importModal.classList.remove('hidden');
-         syncImportPresets();
-     }
-
-     confirmImportBtn.addEventListener('click', () => {
-         forceImportField.value = 'true';
-         durationInput.value  = importDays.value;
-         showLoading("Importando usuário...");
-         document.getElementById('mainForm').submit();
-     });
 
 
 
-     // ── Batch rows ────────────────────────────────────────────────
-     function addBatchRow() {
-         const container = document.getElementById('batchRows');
+         // ── Batch rows ────────────────────────────────────────────────
+         function addBatchRow() {
+             const container = document.getElementById('batchRows');
 
-         const row = document.createElement('div');
-         row.className = 'batch-row';
+             const row = document.createElement('div');
+             row.className = 'batch-row';
 
-         // Grid
-         const grid = document.createElement('div');
-         grid.className = 'batch-row-grid';
+             // Grid
+             const grid = document.createElement('div');
+             grid.className = 'batch-row-grid';
 
-         // Email
-         const emailGroup = document.createElement('div');
-         emailGroup.className = 'form-group span-2';
-         const emailLabel = document.createElement('label');
-         emailLabel.className = 'form-label';
-         emailLabel.textContent = 'Email';
-         const emailInput = document.createElement('input');
-         emailInput.type = 'email';
-         emailInput.className = 'form-input batch-email';
-         emailInput.placeholder = 'usuario@empresa.com';
-         emailGroup.appendChild(emailLabel);
-         emailGroup.appendChild(emailInput);
+             // Email
+             const emailGroup = document.createElement('div');
+             emailGroup.className = 'form-group span-2';
+             const emailLabel = document.createElement('label');
+             emailLabel.className = 'form-label';
+             emailLabel.textContent = 'Email';
+             const emailInput = document.createElement('input');
+             emailInput.type = 'email';
+             emailInput.className = 'form-input batch-email';
+             emailInput.placeholder = 'usuario@empresa.com';
+             emailInput.maxLength = 254;
+             emailGroup.appendChild(emailLabel);
+             emailGroup.appendChild(emailInput);
 
-         // Nome
-         const nameGroup = document.createElement('div');
-         nameGroup.className = 'form-group';
-         const nameLabel = document.createElement('label');
-         nameLabel.className = 'form-label';
-         nameLabel.textContent = 'Nome';
-         const nameInput = document.createElement('input');
-         nameInput.type = 'text';
-         nameInput.className = 'form-input batch-name';
-         nameInput.placeholder = 'Nome';
-         nameGroup.appendChild(nameLabel);
-         nameGroup.appendChild(nameInput);
+             // Nome
+             const nameGroup = document.createElement('div');
+             nameGroup.className = 'form-group';
+             const nameLabel = document.createElement('label');
+             nameLabel.className = 'form-label';
+             nameLabel.textContent = 'Nome';
+             const nameInput = document.createElement('input');
+             nameInput.type = 'text';
+             nameInput.className = 'form-input batch-name';
+             nameInput.placeholder = 'Nome';
+             nameInput.maxLength = 100;
+             nameGroup.appendChild(nameLabel);
+             nameGroup.appendChild(nameInput);
 
-         // Sobrenome
-         const lastNameGroup = document.createElement('div');
-         lastNameGroup.className = 'form-group';
-         const lastNameLabel = document.createElement('label');
-         lastNameLabel.className = 'form-label';
-         lastNameLabel.textContent = 'Sobrenome';
-         const lastNameInput = document.createElement('input');
-         lastNameInput.type = 'text';
-         lastNameInput.className = 'form-input batch-lastname';
-         lastNameInput.placeholder = 'Sobrenome';
-         lastNameGroup.appendChild(lastNameLabel);
-         lastNameGroup.appendChild(lastNameInput);
+             // Sobrenome
+             const lastNameGroup = document.createElement('div');
+             lastNameGroup.className = 'form-group';
+             const lastNameLabel = document.createElement('label');
+             lastNameLabel.className = 'form-label';
+             lastNameLabel.textContent = 'Sobrenome';
+             const lastNameInput = document.createElement('input');
+             lastNameInput.type = 'text';
+             lastNameInput.className = 'form-input batch-lastname';
+             lastNameInput.placeholder = 'Sobrenome';
+             lastNameInput.maxLength = 100;
+             lastNameGroup.appendChild(lastNameLabel);
+             lastNameGroup.appendChild(lastNameInput);
 
-         grid.appendChild(emailGroup);
-         grid.appendChild(nameGroup);
-         grid.appendChild(lastNameGroup);
+             grid.appendChild(emailGroup);
+             grid.appendChild(nameGroup);
+             grid.appendChild(lastNameGroup);
 
-         // Botão remover
-         const removeBtn = document.createElement('button');
-         removeBtn.type = 'button';
-         removeBtn.className = 'btn-remove-row';
-         removeBtn.title = 'Remover';
-         removeBtn.textContent = '×';
-         removeBtn.addEventListener('click', () => {
-             row.remove();
+             // Botão remover
+             const removeBtn = document.createElement('button');
+             removeBtn.type = 'button';
+             removeBtn.className = 'btn-remove-row';
+             removeBtn.title = 'Remover';
+             removeBtn.textContent = '×';
+             removeBtn.addEventListener('click', () => {
+                 row.remove();
+                 updateRemoveButtons();
+             });
+
+             row.appendChild(grid);
+             row.appendChild(removeBtn);
+
+             container.appendChild(row);
              updateRemoveButtons();
-         });
+         }
 
-         row.appendChild(grid);
-         row.appendChild(removeBtn);
+         function updateRemoveButtons() {
+             const rows = document.querySelectorAll('.batch-row');
+             rows.forEach(r => {
+                 r.querySelector('.btn-remove-row').style.display = rows.length > 1 ? '' : 'none';
+             });
+         }
 
-         container.appendChild(row);
-         updateRemoveButtons();
-     }
+         // ── Batch submit ──────────────────────────────────────────────
+         if (!isEdit) {
+             const batchSubmitBtn = document.createElement('button');
+             batchSubmitBtn.type = 'button';
+             batchSubmitBtn.className = 'btn btn-primary';
+             batchSubmitBtn.textContent = 'Criar usuário(s)';
+             batchSubmitBtn.id = 'batchSubmitBtn';
+             document.querySelector('.form-actions').appendChild(batchSubmitBtn);
 
-     function updateRemoveButtons() {
-         const rows = document.querySelectorAll('.batch-row');
-         rows.forEach(r => {
-             r.querySelector('.btn-remove-row').style.display = rows.length > 1 ? '' : 'none';
-         });
-     }
+             document.getElementById('submitBtn').style.display = 'none';
 
-     // ── Batch submit ──────────────────────────────────────────────
-     if (!isEdit) {
-         const batchSubmitBtn = document.createElement('button');
-         batchSubmitBtn.type = 'button';
-         batchSubmitBtn.className = 'btn btn-primary';
-         batchSubmitBtn.textContent = 'Criar usuário(s)';
-         batchSubmitBtn.id = 'batchSubmitBtn';
-         document.querySelector('.form-actions').appendChild(batchSubmitBtn);
+             addBatchRow();
 
-         document.getElementById('submitBtn').style.display = 'none';
+             document.getElementById('addRowBtn')?.addEventListener('click', addBatchRow);
 
-         addBatchRow();
+             batchSubmitBtn.addEventListener('click', () => {
+             const hiddenContainer = document.getElementById('batchHiddenFields');
+             while (hiddenContainer.firstChild) hiddenContainer.removeChild(hiddenContainer.firstChild);
 
-         document.getElementById('addRowBtn')?.addEventListener('click', addBatchRow);
+             const rows = document.querySelectorAll('.batch-row');
+             const nameRegex = /^[a-z '-]+$/i;
+             let hasAny = false;
+             let validationError = null;
 
-         batchSubmitBtn.addEventListener('click', () => {
-         const hiddenContainer = document.getElementById('batchHiddenFields');
-         while (hiddenContainer.firstChild) hiddenContainer.removeChild(hiddenContainer.firstChild);
+             const addHidden = (fieldName, value) => {
+                 const input = document.createElement('input');
+                 input.type = 'hidden';
+                 input.name = fieldName;
+                 input.value = value;
+                 hiddenContainer.appendChild(input);
+             };
 
-         const rows = document.querySelectorAll('.batch-row');
-         const nameRegex = /^[a-z '-]+$/i;
-         let hasAny = false;
-         let validationError = null;
+             rows.forEach(row => {
+                 if (validationError) return;
 
-         const addHidden = (fieldName, value) => {
-             const input = document.createElement('input');
-             input.type = 'hidden';
-             input.name = fieldName;
-             input.value = value;
-             hiddenContainer.appendChild(input);
-         };
+                 const email    = row.querySelector('.batch-email').value.trim();
+                 const name     = row.querySelector('.batch-name').value.trim();
+                 const lastName = row.querySelector('.batch-lastname').value.trim();
 
-         rows.forEach(row => {
-             if (validationError) return;
+                 if (!email) return;
 
-             const email    = row.querySelector('.batch-email').value.trim();
-             const name     = row.querySelector('.batch-name').value.trim();
-             const lastName = row.querySelector('.batch-lastname').value.trim();
+                 if (name && !nameRegex.test(name)) {
+                     validationError = `Nome inválido: "${name}". Use apenas letras, espaços, apóstrofos ou hífens.`;
+                     return;
+                 }
 
-             if (!email) return;
+                 if (lastName && !nameRegex.test(lastName)) {
+                     validationError = `Sobrenome inválido: "${lastName}". Use apenas letras, espaços, apóstrofos ou hífens.`;
+                     return;
+                 }
 
-             if (name && !nameRegex.test(name)) {
-                 validationError = `Nome inválido: "${name}". Use apenas letras, espaços, apóstrofos ou hífens.`;
+                 hasAny = true;
+                 addHidden('BatchEmails', email);
+                 addHidden('BatchNames', name);
+                 addHidden('BatchLastNames', lastName);
+             });
+
+             if (validationError) {
+                 alert(validationError);
                  return;
              }
 
-             if (lastName && !nameRegex.test(lastName)) {
-                 validationError = `Sobrenome inválido: "${lastName}". Use apenas letras, espaços, apóstrofos ou hífens.`;
+             if (!hasAny) {
+                 alert('Informe ao menos um e-mail.');
                  return;
              }
 
-             hasAny = true;
-             addHidden('BatchEmails', email);
-             addHidden('BatchNames', name);
-             addHidden('BatchLastNames', lastName);
+             document.querySelectorAll('.group-checkbox:checked').forEach(cb => {
+                 addHidden('SelectedGroups', cb.value);
+             });
+
+                document.getElementById('batchDurationDays').value = durationInput.value;
+
+                const validRows = Array.from(rows).filter(r =>
+                    r.querySelector('.batch-email').value.trim() !== ''
+                );
+
+                if (validRows.length === 1) {
+                    const r = validRows[0];
+                    document.getElementById('Email').value    = r.querySelector('.batch-email').value.trim();
+                    document.getElementById('Name').value     = r.querySelector('.batch-name').value.trim();
+                    document.getElementById('LastName').value = r.querySelector('.batch-lastname').value.trim();
+                    showLoading("Criando usuário...");
+                    document.getElementById('mainForm').submit();
+                } else {
+                    showLoading("Criando usuários...");
+                    document.getElementById('batchForm').submit();
+                }
          });
-
-         if (validationError) {
-             alert(validationError);
-             return;
-         }
-
-         if (!hasAny) {
-             alert('Informe ao menos um e-mail.');
-             return;
-         }
-
-         document.querySelectorAll('.group-checkbox:checked').forEach(cb => {
-             addHidden('SelectedGroups', cb.value);
-         });
-
-            document.getElementById('batchDurationDays').value = durationInput.value;
-
-            const validRows = Array.from(rows).filter(r =>
-                r.querySelector('.batch-email').value.trim() !== ''
-            );
-
-            if (validRows.length === 1) {
-                const r = validRows[0];
-                document.getElementById('Email').value    = r.querySelector('.batch-email').value.trim();
-                document.getElementById('Name').value     = r.querySelector('.batch-name').value.trim();
-                document.getElementById('LastName').value = r.querySelector('.batch-lastname').value.trim();
-                showLoading("Criando usuário...");
-                document.getElementById('mainForm').submit();
-            } else {
-                showLoading("Criando usuários...");
-                document.getElementById('batchForm').submit();
-            }
-     });
-    }
+        }
 </script>

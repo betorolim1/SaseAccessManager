@@ -9,7 +9,7 @@
 
     public class TemporarySaseUser
     {
-        public string ID_USUARIO_SASE { get; set; }
+        public Guid ID_USUARIO_SASE { get; set; }
 
         public string DS_EMAIL { get; set; } = default!;
 

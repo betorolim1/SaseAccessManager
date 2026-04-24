@@ -37,12 +37,12 @@ namespace SaseAccessManager.Services
             await _db.SaveChangesAsync();
         }
 
-        public async Task<TemporarySaseUser?> GetById(string id)
+        public async Task<TemporarySaseUser?> GetById(Guid id)
         {
             return await _db.S_USUARIO_SASE.FindAsync(id);
         }
 
-        public async Task Remove(string id)
+        public async Task Remove(Guid id)
         {
             var user = await _db.S_USUARIO_SASE.FindAsync(id);
             if (user != null)

@@ -43,7 +43,7 @@ public class IndexModel : PageModel
         await LoadUsers();
     }
 
-    public async Task<IActionResult> OnPostRemove(string id)
+    public async Task<IActionResult> OnPostRemove(Guid id)
     {
         var result = await _service.Remove(id);
 
@@ -76,7 +76,7 @@ public class IndexModel : PageModel
         );
     }
 
-    public async Task<IActionResult> OnPostReactivate(string id, int durationDays = 30)
+    public async Task<IActionResult> OnPostReactivate(Guid id, int durationDays = 30)
     {
         var result = await _service.Reactivate(id, durationDays);
 
