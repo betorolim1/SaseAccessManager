@@ -794,6 +794,14 @@ body {
     gap: 0;
 }
 
+.d-inline {
+    display: inline;
+}
+
+.d-none {
+    display: none;
+}
+
 @@keyframes spin {
     to {
         transform: rotate(360deg);
