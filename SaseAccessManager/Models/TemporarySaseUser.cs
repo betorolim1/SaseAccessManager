@@ -30,5 +30,7 @@
         public List<string> DS_GRUPO_ACESSO { get; set; } = [];
 
         public string? DS_CHAMADO { get; set; }
+
+        public string? DS_MOTIVO_REMOCAO { get; set; }
     }
 }

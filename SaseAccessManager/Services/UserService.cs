@@ -120,7 +120,7 @@ namespace SaseAccessManager.Services
         public async Task<List<TemporarySaseUser>> List()
             => await _store.GetAll();
 
-        public async Task<OperationResult> Remove(Guid id)
+        public async Task<OperationResult> Remove(Guid id, string? motivo = null)
         {
             var users = await _store.GetAll();
 
@@ -139,6 +139,7 @@ namespace SaseAccessManager.Services
             {
                 user.ST_USUARIO = UserStatus.Removed;
                 user.DS_ERRO = null;
+                user.DS_MOTIVO_REMOCAO = motivo;
             }
             else
             {

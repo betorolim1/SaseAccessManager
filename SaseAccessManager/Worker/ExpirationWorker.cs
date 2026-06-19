@@ -48,7 +48,7 @@ namespace SaseAccessManager.Worker
                         foreach (var user in expired)
                         {
                             _logger.LogInformation($"Removendo usuário expirado: {user.DS_EMAIL}");
-                            await userService.Remove(user.ID_USUARIO_SASE);
+                            await userService.Remove(user.ID_USUARIO_SASE, $"Removido automaticamente por expiração em {DateTime.UtcNow:dd/MM/yyyy HH:mm} UTC.");
                         }
                     }
 
