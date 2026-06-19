@@ -1024,6 +1024,14 @@ tbody tr:nth-child(-n+2) .groups-tooltip::after {
     border-bottom-color: var(--surface2);
 }
 
+.d-inline {
+    display: inline;
+}
+
+.d-none {
+    display: none;
+}
+
 @@keyframes spin {
     to {
         transform: rotate(360deg);

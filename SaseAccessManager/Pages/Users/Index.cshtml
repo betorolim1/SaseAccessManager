@@ -238,7 +238,7 @@
                             <div class="actions">
                                 @if (u.ST_USUARIO != UserStatus.Removed)
                                 {
-                                    <form method="post" asp-page-handler="Remove" style="display:inline">
+                                    <form method="post" asp-page-handler="Remove" class="d-inline">
                                         <input type="hidden" name="id" value="@u.ID_USUARIO_SASE" />
                                         <button type="submit" class="btn btn-danger remove-btn" data-email="@u.DS_EMAIL">
                                             Remover
@@ -304,7 +304,7 @@
     </div>
 
     <!-- Form oculto para reativação -->
-    <form id="reactivateForm" method="post" asp-page-handler="Reactivate" style="display:none">
+    <form id="reactivateForm" method="post" asp-page-handler="Reactivate" class="d-none">
         <input type="hidden" id="reactivateId" name="id" />
         <input type="hidden" id="reactivateDaysField" name="durationDays" value="30" />
     </form>
@@ -379,14 +379,14 @@
     // ── Toast ─────────────────────────────────────────────────────────
     setTimeout(() => {
         const t = document.getElementById("toast");
-        if (t) { t.style.opacity = "0"; setTimeout(() => t.remove(), 400); }
+        if (t) { t.classList.add("toast-fade-out"); setTimeout(() => t.remove(), 400); }
     }, 5000);
 
     // ── Loading em submits ────────────────────────────────────────────
     document.querySelectorAll("form").forEach(form => {
         form.addEventListener("submit", () => {
             showLoading("Processando...");
-            document.body.style.cursor = "wait";
+            document.body.classList.add("cursor-wait");
         });
     });
 

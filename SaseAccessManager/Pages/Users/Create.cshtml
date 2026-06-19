@@ -525,7 +525,7 @@
          function updateRemoveButtons() {
              const rows = document.querySelectorAll('.batch-row');
              rows.forEach(r => {
-                 r.querySelector('.btn-remove-row').style.display = rows.length > 1 ? '' : 'none';
+                 r.querySelector('.btn-remove-row').classList.toggle('d-none', rows.length <= 1);
              });
          }
 
@@ -538,7 +538,7 @@
              batchSubmitBtn.id = 'batchSubmitBtn';
              document.querySelector('.form-actions').appendChild(batchSubmitBtn);
 
-             document.getElementById('submitBtn').style.display = 'none';
+             document.getElementById('submitBtn').classList.add('d-none');
 
              addBatchRow();
 
