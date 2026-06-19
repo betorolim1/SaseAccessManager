@@ -154,6 +154,19 @@
                 </div>
             </div>
 
+            <!-- SECTION: Chamado -->
+            <div class="card-section">
+                <div class="section-label">Chamado</div>
+                <div class="form-group">
+                    <label asp-for="Chamado" class="form-label">Nº ou descrição do chamado</label>
+                    <textarea asp-for="Chamado"
+                              class="form-input"
+                              rows="2"
+                              placeholder="Ex: 55314123 ou descrição livre da solicitação"
+                              maxlength="500"></textarea>
+                </div>
+            </div>
+
             <!-- SECTION: Grupos de acesso -->
             <div class="card-section">
                 <div class="section-label">Grupos de acesso</div>
@@ -315,19 +328,23 @@
          let checkChanges = () => {};
 
          if (isEdit) {
-             const checkboxes     = document.querySelectorAll('.group-checkbox');
-             const submitBtn      = document.getElementById('submitBtn');
-             const originalGroups = Array.from(checkboxes).map(cb => cb.checked);
-             const originalDays   = durationInput.value;
+             const checkboxes      = document.querySelectorAll('.group-checkbox');
+             const submitBtn       = document.getElementById('submitBtn');
+             const chamadoInput    = document.getElementById('Chamado');
+             const originalGroups  = Array.from(checkboxes).map(cb => cb.checked);
+             const originalDays    = durationInput.value;
+             const originalChamado = chamadoInput ? chamadoInput.value : '';
 
              checkChanges = function () {
                  const groupsChanged   = Array.from(checkboxes).some((cb, i) => cb.checked !== originalGroups[i]);
                  const durationChanged = durationInput.value !== originalDays;
-                 submitBtn.disabled = !(groupsChanged || durationChanged);
+                 const chamadoChanged  = chamadoInput ? chamadoInput.value !== originalChamado : false;
+                 submitBtn.disabled = !(groupsChanged || durationChanged || chamadoChanged);
              };
 
              checkboxes.forEach(cb => cb.addEventListener('change', checkChanges));
              durationInput.addEventListener('input', checkChanges);
+             if (chamadoInput) chamadoInput.addEventListener('input', checkChanges);
              document.querySelectorAll('.preset-btn').forEach(btn => {
                  btn.addEventListener('click', () => setTimeout(checkChanges, 10));
              });

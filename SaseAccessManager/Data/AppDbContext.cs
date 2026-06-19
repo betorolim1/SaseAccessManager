@@ -28,6 +28,7 @@ public class AppDbContext : DbContext
                 entity.Property(e => e.DH_TENTATIVA_REMOCAO).HasColumnName("dh_tentativa_remocao");
                 entity.Property(e => e.DS_ERRO).HasColumnName("ds_erro");
                 entity.Property(e => e.DS_GRUPO_ACESSO).HasColumnName("ds_grupo_acesso").HasColumnType("jsonb");
+                entity.Property(e => e.DS_CHAMADO).HasColumnName("ds_chamado").HasColumnType("text");
             });
         }
     }

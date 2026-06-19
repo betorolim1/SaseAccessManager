@@ -28,5 +28,7 @@
         public string? DS_ERRO { get; set; }
 
         public List<string> DS_GRUPO_ACESSO { get; set; } = [];
+
+        public string? DS_CHAMADO { get; set; }
     }
 }

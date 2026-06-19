@@ -90,6 +90,10 @@ public class CreateModel : PageModel
     [TempData]
     public string? ToastType { get; set; } // success | error
 
+    [BindProperty]
+    [Display(Name = "Chamado")]
+    public string? Chamado { get; set; }
+
     public class InputModel
     {
         [Display(Name = "Email")]
@@ -148,6 +152,8 @@ public class CreateModel : PageModel
         IsEdit = true;
         UserId = user.ID_USUARIO_SASE;
 
+        Chamado = user.DS_CHAMADO;
+
         return Page();
     }
 
@@ -171,7 +177,7 @@ public class CreateModel : PageModel
             return RedirectToPage("/Users/Index");
         }
 
-        var result = await _service.CreateBatch(users, DurationDays, SelectedGroups);
+        var result = await _service.CreateBatch(users, DurationDays, SelectedGroups, Chamado);
 
         if (result.FailCount == 0)
         {
@@ -212,7 +218,7 @@ public class CreateModel : PageModel
                 return Page();
             }
 
-            var expirationResult = await _service.UpdateExpiration(UserId.HasValue ? UserId.Value : Guid.Empty, DurationDays);
+            var expirationResult = await _service.UpdateExpiration(UserId.HasValue ? UserId.Value : Guid.Empty, DurationDays, Chamado);
 
             if (!expirationResult.Success)
             {
@@ -230,7 +236,7 @@ public class CreateModel : PageModel
         {
             var import = await _service.ImportExistingUser(
                 Email, Name, LastName, DurationDays, SelectedGroups,
-                SaseUserIdForImport!, ExistingSaseGroupIds);
+                SaseUserIdForImport!, ExistingSaseGroupIds, Chamado);
 
             if (!import.Success)
             {
@@ -249,7 +255,7 @@ public class CreateModel : PageModel
             Name,
             LastName,
             DurationDays,
-            SelectedGroups);
+            SelectedGroups, Chamado);
 
         if (create.UserAlreadyExistsInSase)
         {

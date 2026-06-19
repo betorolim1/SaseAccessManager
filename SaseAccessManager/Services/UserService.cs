@@ -25,7 +25,7 @@ namespace SaseAccessManager.Services
         }
 
         public async Task<OperationResult<TemporarySaseUser>> Create(
-            string email, string? name, string? lastName, int durationDays, List<string> accessGroups)
+            string email, string? name, string? lastName, int durationDays, List<string> accessGroups, string? chamado = null)
         {
             accessGroups = accessGroups
                 .Where(g => !string.IsNullOrWhiteSpace(g) && g != "All Users")
@@ -63,7 +63,8 @@ namespace SaseAccessManager.Services
                 DH_CRIACAO = DateTime.UtcNow,
                 DH_EXPIRACAO = DateTime.UtcNow.AddDays(durationDays),
                 ST_USUARIO = UserStatus.Active,
-                DS_GRUPO_ACESSO = accessGroups
+                DS_GRUPO_ACESSO = accessGroups,
+                DS_CHAMADO = chamado
             };
 
             var request = BuildSaseRequest(user);
@@ -183,7 +184,7 @@ namespace SaseAccessManager.Services
 
         public async Task<OperationResult<TemporarySaseUser>> ImportExistingUser(
             string email, string? name, string? lastName, int durationDays,
-            List<string> accessGroups, string saseUserId, List<string> alreadyInGroups)
+            List<string> accessGroups, string saseUserId, List<string> alreadyInGroups, string? chamado = null)
         {
             email = email.Trim().ToLowerInvariant();
 
@@ -212,7 +213,8 @@ namespace SaseAccessManager.Services
                 DH_EXPIRACAO = DateTime.UtcNow.AddDays(durationDays),
                 ST_USUARIO = UserStatus.Active,
                 ID_USUARIO_PERIMETER = saseUserId,
-                DS_GRUPO_ACESSO = groupsToTrack
+                DS_GRUPO_ACESSO = groupsToTrack,
+                DS_CHAMADO = chamado
             };
 
             await _store.Add(user);
@@ -220,7 +222,7 @@ namespace SaseAccessManager.Services
             return OperationResult<TemporarySaseUser>.Ok(user);
         }
 
-        public async Task<OperationResult> UpdateExpiration(Guid id, int durationDays)
+        public async Task<OperationResult> UpdateExpiration(Guid id, int durationDays, string? chamado = null)
         {
             var user = await _store.GetById(id);
 
@@ -231,6 +233,8 @@ namespace SaseAccessManager.Services
                 return OperationResult.Fail("Apenas usuários ativos podem ter o prazo alterado.");
 
             user.DH_EXPIRACAO = DateTime.UtcNow.AddDays(durationDays);
+            user.DS_CHAMADO = chamado;
+
             await _store.Update(user);
 
             return OperationResult.Ok();
@@ -295,14 +299,13 @@ namespace SaseAccessManager.Services
 
         public async Task<BatchOperationResult> CreateBatch(
             List<(string Email, string? Name, string? LastName)> users,
-            int durationDays,
-            List<string> accessGroups)
+            int durationDays, List<string> accessGroups, string? chamado = null)
         {
             var results = new List<BatchUserResult>();
 
             foreach (var (email, name, lastName) in users)
             {
-                var create = await Create(email, name, lastName, durationDays, accessGroups);
+                var create = await Create(email, name, lastName, durationDays, accessGroups, chamado);
 
                 if (create.Success)
                 {
