@@ -47,8 +47,13 @@ namespace SaseAccessManager.Worker
 
                         foreach (var user in expired)
                         {
+                            var brasilia = TimeZoneInfo.FindSystemTimeZoneById("E. South America Standard Time");
+                            var dataBrasilia = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, brasilia);
+
+                            var texto = $"{dataBrasilia:dd/MM/yyyy HH:mm} Horário de Brasília";
+
                             _logger.LogInformation($"Removendo usuário expirado: {user.DS_EMAIL}");
-                            await userService.Remove(user.ID_USUARIO_SASE, $"Removido automaticamente por expiração em {DateTime.UtcNow:dd/MM/yyyy HH:mm} UTC.");
+                            await userService.Remove(user.ID_USUARIO_SASE, $"Removido automaticamente por expiração em {texto}");
                         }
                     }
 

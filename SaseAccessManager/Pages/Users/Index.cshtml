@@ -235,7 +235,8 @@
                             <span class="@BadgeClass(u.ST_USUARIO)">@StatusLabel(u.ST_USUARIO)</span>
                             @if (!string.IsNullOrWhiteSpace(u.DS_MOTIVO_REMOCAO))
                             {
-                                <span class="motivo-icon" title="@u.DS_MOTIVO_REMOCAO">⏱</span>
+                                var isAuto = u.DS_MOTIVO_REMOCAO.Contains("automaticamente", StringComparison.OrdinalIgnoreCase);
+                                <span class="motivo-icon" title="@u.DS_MOTIVO_REMOCAO">@(isAuto ? "⏱" : "🗑")</span>
                             }
                         </td>
                         <td>

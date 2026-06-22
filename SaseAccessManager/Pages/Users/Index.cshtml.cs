@@ -45,7 +45,12 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnPostRemove(Guid id)
     {
-        var result = await _service.Remove(id);
+        var brasilia = TimeZoneInfo.FindSystemTimeZoneById("E. South America Standard Time");
+        var dataBrasilia = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, brasilia);
+
+        var texto = $"{dataBrasilia:dd/MM/yyyy HH:mm} Horário de Brasília";
+
+        var result = await _service.Remove(id, $"Removido manualmente em {texto}");
 
         if (!result.Success)
         {
