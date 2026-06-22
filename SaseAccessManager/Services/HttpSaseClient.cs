@@ -233,4 +233,45 @@ public class HttpSaseClient : ISaseClient
 
         return clone;
     }
+
+    public async Task<List<SaseUserDto>> GetAllUsersAsync(CancellationToken ct = default)
+    {
+        var allUsers = new List<SaseUserDto>();
+        var page = 1;
+        const int limit = 100;
+
+        while (true)
+        {
+            try
+            {
+                var request = new HttpRequestMessage(HttpMethod.Get,
+                    $"users?page={page}&limit={limit}");
+
+                var response = await SendAsync(request, ct);
+
+                if (!response.IsSuccessStatusCode)
+                    break;
+
+                var stream = await response.Content.ReadAsStreamAsync(ct);
+                var result = await JsonSerializer.DeserializeAsync<SaseUserSearchResponse>(
+                    stream, JsonOptions.Default, ct);
+
+                if (result?.Data == null || result.Data.Count == 0)
+                    break;
+
+                allUsers.AddRange(result.Data.Where(u => !u.Terminated));
+
+                if (result.Data.Count < limit)
+                    break;
+
+                page++;
+            }
+            catch
+            {
+                break;
+            }
+        }
+
+        return allUsers;
+    }
 }

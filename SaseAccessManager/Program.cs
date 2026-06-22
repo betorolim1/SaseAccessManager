@@ -49,6 +49,8 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddSingleton<ISaseGroupCache, SaseGroupCache>();
 builder.Services.AddScoped<UserService>();
 
+builder.Services.AddHostedService<SyncWorker>();
+
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
