@@ -11,7 +11,9 @@ using System.ComponentModel.DataAnnotations;
 
 namespace SaseAccessManager.Pages.Users;
 
+#if !DEBUG
 [Authorize]
+#endif
 public class CreateModel : PageModel
 {
     private readonly UserService _service;

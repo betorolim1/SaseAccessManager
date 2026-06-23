@@ -80,6 +80,9 @@
             <button class="btn btn-ghost" id="refreshBtn">
                 ↻ &nbsp;Atualizar
             </button>
+            <button class="btn btn-ghost" id="logsBtn">
+                📋 &nbsp;Logs
+            </button>
             <a href="/Users/Create" class="btn btn-primary">
                 + &nbsp;Novo usuário
             </a>
@@ -320,10 +323,33 @@
             <div class="modal-title">Chamado</div>
             <div class="modal-body">
                 <div class="modal-groups-label" id="chamadoModalEmail"></div>
-                <div id="chamadoModalText" style="white-space:pre-wrap; word-break:break-all; overflow-wrap:anywhere; margin-top:8px;"></div>
+                <div id="chamadoModalText" class="chamado-modal-text"></div>
             </div>
             <div class="modal-actions">
                 <button type="button" id="closeChamadoModal" class="btn btn-ghost">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOGS MODAL -->
+    <div id="logsModal" class="modal-overlay hidden">
+        <div class="modal-box modal-box--wide">
+            <div class="modal-title">
+                Logs da aplicação
+                <button type="button" id="refreshLogsBtn" class="btn btn-ghost btn-refresh-logs">
+                    ↻ Atualizar
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="logsFilter" class="logs-filter">
+                    <input id="logsSearch" class="search-input width-full" type="text" placeholder="Filtrar logs..." />
+                </div>
+                <div id="logsContainer" class="logs-container">
+                    <div class="loading-text">Carregando...</div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" id="closeLogsBtn" class="btn btn-ghost">Fechar</button>
             </div>
         </div>
     </div>
@@ -342,7 +368,6 @@
 
         // ── Chamado modal ────────────────────────────────────────────────
     document.querySelectorAll('.chamado-truncated').forEach(el => {
-        el.style.cursor = 'pointer';
         el.addEventListener('click', () => {
             document.getElementById('chamadoModalEmail').textContent = el.dataset.email;
             document.getElementById('chamadoModalText').textContent = el.dataset.chamado;
@@ -473,5 +498,103 @@
         showLoading("Reativando usuário...");
         document.getElementById('reactivateForm').submit();
     });
+
+        // ── Logs modal ───────────────────────────────────────────────────
+    const logsModal     = document.getElementById('logsModal');
+    const logsContainer = document.getElementById('logsContainer');
+    const logsSearch    = document.getElementById('logsSearch');
+    let allLogs = [];
+
+    function levelClass(level) {
+        switch (level) {
+            case 'Warning':  return 'log-warn';
+            case 'Error':    return 'log-error';
+            case 'Critical': return 'log-error';
+            default:         return 'log-info';
+        }
+    }
+
+    function renderLogs(filter = '') {
+        const term = filter.toLowerCase();
+        const filtered = term
+            ? allLogs.filter(l => l.message.toLowerCase().includes(term)
+                               || l.category.toLowerCase().includes(term)
+                               || l.level.toLowerCase().includes(term))
+            : allLogs;
+
+        while (logsContainer.firstChild)
+            logsContainer.removeChild(logsContainer.firstChild);
+
+        if (filtered.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'empty-text';
+            empty.textContent = 'Nenhum log encontrado.';
+            logsContainer.appendChild(empty);
+            return;
+        }
+
+        filtered.forEach(l => {
+            const line = document.createElement('div');
+            line.className = 'log-line ' + levelClass(l.level);
+
+            const time = document.createElement('span');
+            time.className = 'log-time';
+            time.textContent = l.time;
+
+            const level = document.createElement('span');
+            level.className = 'log-level';
+            level.textContent = l.level;
+
+            const cat = document.createElement('span');
+            cat.className = 'log-cat';
+            cat.textContent = l.category;
+
+            const msg = document.createElement('span');
+            msg.className = 'log-msg';
+            msg.textContent = l.message;
+
+            line.appendChild(time);
+            line.appendChild(level);
+            line.appendChild(cat);
+            line.appendChild(msg);
+
+            logsContainer.appendChild(line);
+        });
+    }
+
+    async function loadLogs() {
+        while (logsContainer.firstChild)
+            logsContainer.removeChild(logsContainer.firstChild);
+        const loading = document.createElement('div');
+        loading.className = 'loading-text';
+        loading.textContent = 'Carregando...';
+        logsContainer.appendChild(loading);
+
+        try {
+            const res = await fetch('/api/logs');
+            allLogs = await res.json();
+            renderLogs(logsSearch.value);
+        } catch {
+            while (logsContainer.firstChild)
+                logsContainer.removeChild(logsContainer.firstChild);
+            const err = document.createElement('div');
+            err.className = 'empty-text';
+            err.textContent = 'Erro ao carregar logs.';
+            logsContainer.appendChild(err);
+        }
+    }
+
+    document.getElementById('logsBtn').addEventListener('click', () => {
+        logsModal.classList.remove('hidden');
+        loadLogs();
+    });
+
+    document.getElementById('closeLogsBtn').addEventListener('click', () => {
+        logsModal.classList.add('hidden');
+    });
+
+    document.getElementById('refreshLogsBtn').addEventListener('click', loadLogs);
+
+    logsSearch.addEventListener('input', () => renderLogs(logsSearch.value));
 
 </script>

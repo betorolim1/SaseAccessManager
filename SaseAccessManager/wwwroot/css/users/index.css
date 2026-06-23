@@ -1075,8 +1075,107 @@ tbody tr:nth-child(-n+2) .groups-tooltip::after {
         opacity: 1;
     }
 
+.modal-box--wide {
+    max-width: 900px;
+    width: 95%;
+}
+
+.logs-container {
+    max-height: 60vh;
+    overflow-y: auto;
+    font-family: 'Courier New', monospace;
+    font-size: 0.75rem;
+    background: rgba(0,0,0,0.3);
+    border-radius: 6px;
+    padding: 12px;
+}
+
+.log-line {
+    display: flex;
+    gap: 8px;
+    padding: 3px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    word-break: break-all;
+}
+
+.log-time {
+    color: #6b7280;
+    white-space: nowrap;
+    min-width: 130px;
+}
+
+.log-level {
+    min-width: 70px;
+    font-weight: 600;
+}
+
+.log-cat {
+    color: #60a5fa;
+    min-width: 120px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.log-msg {
+    flex: 1;
+}
+
+.log-info .log-level {
+    color: #6ee7b7;
+}
+
+.log-warn .log-level {
+    color: #fbbf24;
+}
+
+.log-error .log-level {
+    color: #f87171;
+}
+
+.log-warn {
+    background: rgba(251, 191, 36, 0.05);
+}
+
+.log-error {
+    background: rgba(248, 113, 113, 0.08);
+}
+
 @@keyframes spin {
     to {
         transform: rotate(360deg);
     }
+}
+
+.chamado-modal-text {
+    white-space: pre-wrap;
+    word-break: break-all;
+    overflow-wrap: anywhere;
+    margin-top: 8px;
+}
+
+.chamado-truncated {
+    cursor: pointer;
+}
+
+.logs-filter {
+    margin-bottom: 8px;
+}
+
+.logs-search {
+    width: 100%;
+}
+
+.modal-title-center {
+    display: flex;
+    align-items: center;
+}
+
+.btn-refresh-logs {
+    margin-left: auto;
+    font-size: 0.8rem;
+}
+
+.width-full {
+    width: 100%
 }

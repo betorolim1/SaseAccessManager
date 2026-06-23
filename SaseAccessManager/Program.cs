@@ -7,6 +7,7 @@ using Microsoft.Identity.Web.UI;
 using SaseAccessManager.Auth;
 using SaseAccessManager.Cache;
 using SaseAccessManager.Data;
+using SaseAccessManager.Logging;
 using SaseAccessManager.Options;
 using SaseAccessManager.Services;
 using SaseAccessManager.Worker;
@@ -16,6 +17,10 @@ using System.Security.Cryptography;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Logging.ClearProviders();
+
+var logStore = new InMemoryLogStore(300);
+builder.Services.AddSingleton(logStore);
+builder.Logging.AddProvider(new InMemoryLoggerProvider(logStore));
 
 builder.Logging.AddSimpleConsole(options =>
 {
@@ -49,7 +54,6 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddSingleton<ISaseGroupCache, SaseGroupCache>();
 builder.Services.AddScoped<UserService>();
 
-builder.Services.AddHostedService<SyncWorker>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -57,7 +61,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddScoped<PostgresUserStore>();
 
 builder.Services.AddHostedService<ExpirationWorker>();
+builder.Services.AddHostedService<SyncWorker>();
 
+#if !DEBUG
 builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
     .AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd"));
 
@@ -65,12 +71,17 @@ builder.Services.AddAuthorization(options =>
 {
     options.FallbackPolicy = options.DefaultPolicy;
 });
+#endif
 
+#if DEBUG
+builder.Services.AddRazorPages();
+#else
 builder.Services.AddRazorPages(options =>
 {
     options.Conventions.AuthorizeFolder("/");
 })
     .AddMicrosoftIdentityUI();
+#endif
 
 builder.WebHost.ConfigureKestrel(options =>
 {
@@ -82,12 +93,13 @@ builder.Services.AddControllersWithViews(options =>
     options.SuppressAsyncSuffixInActionNames = true;
 });
 
-
+#if !DEBUG
 builder.Services.Configure<CookiePolicyOptions>(options =>
 {
     options.Secure = CookieSecurePolicy.Always;
     options.MinimumSameSitePolicy = SameSiteMode.None;
 });
+#endif
 
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
@@ -149,10 +161,31 @@ app.MapGet("/", context =>
     return Task.CompletedTask;
 });
 
+app.MapGet("/api/logs", (InMemoryLogStore store) =>
+{
+    var logs = store.GetAll()
+        .OrderByDescending(l => l.Timestamp)
+        .Select(l => new
+        {
+            time = l.Timestamp.ToString("dd/MM/yyyy HH:mm:ss"),
+            level = l.Level.ToString(),
+            category = l.Category.Split('.').LastOrDefault() ?? l.Category,
+            message = l.Message
+        });
+
+    return Results.Ok(logs);
+})
+#if !DEBUG
+.RequireAuthorization()
+#endif
+;
+
 app.UseSwagger();
 app.UseSwaggerUI();
 
+#if !DEBUG
 app.UseHttpsRedirection();
+#endif
 
 app.UseStaticFiles();
 
