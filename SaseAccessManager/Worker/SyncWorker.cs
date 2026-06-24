@@ -7,14 +7,23 @@ namespace SaseAccessManager.Worker
     {
         private readonly IServiceProvider _provider;
         private readonly ILogger<SyncWorker> _logger;
-        private readonly IConfiguration _config;
 
-        public SyncWorker(IServiceProvider provider, ILogger<SyncWorker> logger, IConfiguration config)
+        public SyncWorker(IServiceProvider provider, ILogger<SyncWorker> logger)
         {
             _provider = provider;
             _logger = logger;
-            _config = config;
         }
+
+        private const bool DryRun = true; // Se False, as mudanças serão aplicadas de fato. Se True, as mudanças serão logadas mas não aplicadas.
+
+        private static readonly HashSet<string> WhitelistEmails = new(StringComparer.OrdinalIgnoreCase)
+            {
+                "marcelo.zaranza@hepta.com.br",
+                "hadson.fonseca@hepta.com.br",
+                "daniel.dsantos@agro.gov.br",
+                "adalberto.nogueira@agro.gov.br",
+                "guilherme.bernardes@ntsec.com.br"
+            };
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
@@ -44,10 +53,8 @@ namespace SaseAccessManager.Worker
             var store = scope.ServiceProvider.GetRequiredService<PostgresUserStore>();
             var sase = scope.ServiceProvider.GetRequiredService<ISaseClient>();
 
-            var dryRun = _config.GetValue<bool>("Sync:DryRun", true);
-            var whitelist = _config.GetSection("Sync:WhitelistEmails")
-                .Get<List<string>>() ?? [];
-            var whitelistSet = new HashSet<string>(whitelist, StringComparer.OrdinalIgnoreCase);
+            var dryRun = DryRun;
+            var whitelistSet = WhitelistEmails;
 
             if (dryRun)
                 _logger.LogWarning("Sync em modo DRY-RUN. Nenhum usuário será removido de fato.");
