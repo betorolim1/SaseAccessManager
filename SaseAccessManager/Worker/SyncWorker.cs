@@ -14,7 +14,7 @@ namespace SaseAccessManager.Worker
             _logger = logger;
         }
 
-        private const bool DryRun = true; // Se False, as mudanças serão aplicadas de fato. Se True, as mudanças serão logadas mas não aplicadas.
+        private const bool DryRun = false; // Se False, as mudanças serão aplicadas de fato. Se True, as mudanças serão logadas mas não aplicadas.
 
         private static readonly HashSet<string> WhitelistEmails = new(StringComparer.OrdinalIgnoreCase)
             {
