@@ -1086,8 +1086,8 @@ tbody tr:nth-child(-n+2) .groups-tooltip::after {
 }
 
 .logs-container {
-    flex: 1; 
-    min-height: 0; 
+    flex: 1;
+    min-height: 0;
     max-height: 55vh;
     overflow-y: auto;
     font-family: 'Courier New', monospace;
@@ -1186,3 +1186,55 @@ tbody tr:nth-child(-n+2) .groups-tooltip::after {
 .width-full {
     width: 100%
 }
+
+.th-sortable {
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+    color: #2563eb; /* cor azul sutil, destaca dos demais */
+    position: relative;
+}
+
+    .th-sortable::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: -1px;
+        height: 2px;
+        background: #2563eb;
+        opacity: 0;
+        transition: opacity .15s;
+    }
+
+    .th-sortable:hover {
+        color: #1d4ed8;
+    }
+
+        .th-sortable:hover::after {
+            opacity: 0.3; /* underline sutil no hover */
+        }
+
+    .th-sortable.is-active::after {
+        opacity: 1; /* underline sólido no ativo */
+    }
+
+    .th-sortable .sort-arrow {
+        font-size: 12px;
+        opacity: 0;
+        margin-left: 2px;
+        display: inline-block;
+        transition: opacity .15s, transform .2s;
+    }
+
+    .th-sortable:hover .sort-arrow {
+        opacity: 0.4;
+    }
+
+    .th-sortable.is-active .sort-arrow {
+        opacity: 1;
+    }
+
+    .th-sortable.asc .sort-arrow {
+        transform: rotate(180deg);
+    }

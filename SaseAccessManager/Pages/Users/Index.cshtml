@@ -3,13 +3,13 @@
 
 <link rel="stylesheet" href="~/css/users/index.css" asp-append-version="true">
 
-    @if (TempData["ToastMessage"] != null)
-    {
-        <div id="toast" class="toast @(TempData["ToastType"])">
-            @(TempData["ToastType"]?.ToString() == "success" ? "✓" : "✕")
-            @TempData["ToastMessage"]
-        </div>
-    }
+@if (TempData["ToastMessage"] != null)
+{
+    <div id="toast" class="toast @(TempData["ToastType"])">
+        @(TempData["ToastType"]?.ToString() == "success" ? "✓" : "✕")
+        @TempData["ToastMessage"]
+    </div>
+}
 
 @functions {
     string GroupName(string groupId) =>
@@ -118,7 +118,7 @@
             <span id="totalCount" class="table-toolbar-title">@Model.Users.Count usuário(s)</span>
             <div class="search-input-wrap">
                 <span class="search-icon">⌕</span>
-                <input id="searchInput"
+                <input id="searchInput"s
                        class="search-input"
                        type="text"
                        placeholder="Pesquisar…" />
@@ -131,8 +131,12 @@
                     <th>Email</th>
                     <th>Nome</th>
                     <th>Grupos</th>
-                    <th>Criado em</th>
-                    <th>Expira em</th>
+                    <th class="th-sortable is-active" data-sort="criado" id="thCriado">
+                        Criado em <span class="sort-arrow">↓</span>
+                    </th>
+                    <th class="th-sortable" data-sort="expira" id="thExpira">
+                        Expira em <span class="sort-arrow">↓</span>
+                    </th>
                     <th>Chamado</th>
                     <th>Status</th>
                     <th>Ações</th>
@@ -189,8 +193,10 @@
                                 </div>
                             </div>
                         </td>
-                        <td class="cell-date">@u.DH_CRIACAO.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
-                        <td>
+                        <td class="cell-date" data-timestamp="@u.DH_CRIACAO.Ticks">
+                            @u.DH_CRIACAO.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                        </td>
+                        <td data-timestamp="@u.DH_EXPIRACAO.Ticks">
                             @if (u.ST_USUARIO == UserStatus.Removed)
                             {
                                 <span class="expire-na">—</span>
@@ -596,5 +602,53 @@
     document.getElementById('refreshLogsBtn').addEventListener('click', loadLogs);
 
     logsSearch.addEventListener('input', () => renderLogs(logsSearch.value));
+
+    // ── Sort ──────────────────────────────────────────────────────────
+    const tbody = document.querySelector('tbody');
+    const sortHeaders = document.querySelectorAll('.th-sortable');
+    let currentSort = 'criado';
+    let currentAsc = false;
+
+    function sortTable(field, asc) {
+        const rowsArray = Array.from(tbody.querySelectorAll('tr'));
+
+        rowsArray.sort((a, b) => {
+            const statusA = a.classList.contains('row-removed') ? 1 : 0;
+            const statusB = b.classList.contains('row-removed') ? 1 : 0;
+            if (statusA !== statusB) return statusA - statusB;
+
+            let valA, valB;
+            if (field === 'criado') {
+                valA = parseInt(a.querySelector('.cell-date')?.dataset.timestamp || '0');
+                valB = parseInt(b.querySelector('.cell-date')?.dataset.timestamp || '0');
+            } else {
+                valA = parseInt(a.querySelector('[data-expire]')?.dataset.expire || '0');
+                valB = parseInt(b.querySelector('[data-expire]')?.dataset.expire || '0');
+            }
+
+            return asc ? valA - valB : valB - valA;
+        });
+
+        rowsArray.forEach(row => tbody.appendChild(row));
+    }
+
+    sortHeaders.forEach(th => {
+        th.addEventListener('click', () => {
+            const field = th.dataset.sort;
+
+            if (currentSort === field) {
+                currentAsc = !currentAsc;
+            } else {
+                currentSort = field;
+                currentAsc = false;
+            }
+
+            sortHeaders.forEach(h => h.classList.remove('is-active', 'asc'));
+            th.classList.add('is-active');
+            if (currentAsc) th.classList.add('asc');
+
+            sortTable(currentSort, currentAsc);
+        });
+    });
 
 </script>
