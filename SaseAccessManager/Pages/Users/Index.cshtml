@@ -118,7 +118,7 @@
             <span id="totalCount" class="table-toolbar-title">@Model.Users.Count usuário(s)</span>
             <div class="search-input-wrap">
                 <span class="search-icon">⌕</span>
-                <input id="searchInput"s
+                <input id="searchInput"
                        class="search-input"
                        type="text"
                        placeholder="Pesquisar…" />
@@ -193,10 +193,10 @@
                                 </div>
                             </div>
                         </td>
-                        <td class="cell-date" data-timestamp="@u.DH_CRIACAO.Ticks">
+                        <td class="cell-date" data-timestamp="@((long)(u.DH_CRIACAO - DateTime.UnixEpoch).TotalSeconds)">
                             @u.DH_CRIACAO.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
                         </td>
-                        <td data-timestamp="@u.DH_EXPIRACAO.Ticks">
+                        <td data-expire="@((long)(u.DH_EXPIRACAO - DateTime.UnixEpoch).TotalSeconds)">
                             @if (u.ST_USUARIO == UserStatus.Removed)
                             {
                                 <span class="expire-na">—</span>
