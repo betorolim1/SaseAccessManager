@@ -292,6 +292,7 @@ namespace SaseAccessManager.Services
             user.DS_ERRO = null;
             user.DH_TENTATIVA_REMOCAO = null;
             user.DH_CRIACAO = DateTime.UtcNow;
+            user.DS_MOTIVO_REMOCAO = null;
 
             await _store.Update(user);
 
