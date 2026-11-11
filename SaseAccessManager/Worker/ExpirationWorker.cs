@@ -32,8 +32,10 @@ namespace SaseAccessManager.Worker
 
                     var users = await store.GetAll();
 
+                    // Admins não expiram: a API do SASE não permite excluí-los
                     var expired = users
                         .Where(x => x.ST_USUARIO == UserStatus.Active &&
+                                    !x.IsAdmin &&
                                     x.DH_EXPIRACAO <= DateTime.UtcNow)
                         .ToList();
 

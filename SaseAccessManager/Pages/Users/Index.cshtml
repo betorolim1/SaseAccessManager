@@ -196,10 +196,14 @@
                         <td class="cell-date" data-timestamp="@((long)(u.DH_CRIACAO - DateTime.UnixEpoch).TotalSeconds)">
                             @u.DH_CRIACAO.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
                         </td>
-                        <td data-expire="@((long)(u.DH_EXPIRACAO - DateTime.UnixEpoch).TotalSeconds)">
+                        <td data-expire="@(u.IsAdmin ? 253402300799L : (long)(u.DH_EXPIRACAO - DateTime.UnixEpoch).TotalSeconds)">
                             @if (u.ST_USUARIO == UserStatus.Removed)
                             {
                                 <span class="expire-na">—</span>
+                            }
+                            else if (u.IsAdmin)
+                            {
+                                <span class="expire-permanent" title="Usuários Admin não podem ser excluídos pela API do SASE e não expiram"><span class="lock-icon"></span>🔒Permanente</span>
                             }
                             else
                             {
@@ -241,31 +245,40 @@
                             }
                         </td>
                         <td>
-                            <span class="@BadgeClass(u.ST_USUARIO)">@StatusLabel(u.ST_USUARIO)</span>
-                            @if (!string.IsNullOrWhiteSpace(u.DS_MOTIVO_REMOCAO))
-                            {
-                                var isAuto = u.DS_MOTIVO_REMOCAO.Contains("automaticamente", StringComparison.OrdinalIgnoreCase);
-                                var hasObs = !string.IsNullOrWhiteSpace(u.DS_OBSERVACAO_REMOCAO);
-                                var motivoTitle = hasObs
-                                    ? $"{u.DS_MOTIVO_REMOCAO}\nObs: {u.DS_OBSERVACAO_REMOCAO}"
-                                    : u.DS_MOTIVO_REMOCAO;
-                                <span class="motivo-icon @(hasObs ? "has-obs" : "")"
-                                      title="@motivoTitle"
-                                      data-email="@u.DS_EMAIL"
-                                      data-motivo="@u.DS_MOTIVO_REMOCAO"
-                                      data-obs="@u.DS_OBSERVACAO_REMOCAO">@(isAuto ? "⏱" : "🗑")@(hasObs ? "📝" : "")</span>
-                            }
+                            <div class="status-cell">
+                                <span class="@BadgeClass(u.ST_USUARIO)">@StatusLabel(u.ST_USUARIO)</span>
+                                @if (u.IsAdmin)
+                                {
+                                    <span class="badge badge-admin">Admin</span>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(u.DS_MOTIVO_REMOCAO))
+                                {
+                                    var isAuto = u.DS_MOTIVO_REMOCAO.Contains("automaticamente", StringComparison.OrdinalIgnoreCase);
+                                    var hasObs = !string.IsNullOrWhiteSpace(u.DS_OBSERVACAO_REMOCAO);
+                                    var motivoTitle = hasObs
+                                        ? $"{u.DS_MOTIVO_REMOCAO}\nObs: {u.DS_OBSERVACAO_REMOCAO}"
+                                        : u.DS_MOTIVO_REMOCAO;
+                                    <span class="motivo-icon @(hasObs ? "has-obs" : "")"
+                                          title="@motivoTitle"
+                                          data-email="@u.DS_EMAIL"
+                                          data-motivo="@u.DS_MOTIVO_REMOCAO"
+                                          data-obs="@u.DS_OBSERVACAO_REMOCAO">@(isAuto ? "⏱" : "🗑")@(hasObs ? "📝" : "")</span>
+                                }
+                            </div>
                         </td>
                         <td>
                             <div class="actions">
                                 @if (u.ST_USUARIO != UserStatus.Removed)
                                 {
-                                    <button type="button"
-                                            class="btn btn-danger remove-btn"
-                                            data-email="@u.DS_EMAIL"
-                                            data-id="@u.ID_USUARIO_SASE">
-                                        Remover
-                                    </button>
+                                    if (!u.IsAdmin)
+                                    {
+                                        <button type="button"
+                                                class="btn btn-danger remove-btn"
+                                                data-email="@u.DS_EMAIL"
+                                                data-id="@u.ID_USUARIO_SASE">
+                                            Remover
+                                        </button>
+                                    }
                                     <a asp-page="/Users/Create" asp-route-id="@u.ID_USUARIO_SASE" class="btn btn-edit">
                                         Editar
                                     </a>

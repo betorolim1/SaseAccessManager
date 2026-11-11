@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SaseAccessManager.Models
 {
@@ -7,6 +8,14 @@ namespace SaseAccessManager.Models
         Active = 1,
         Removed = 2,
         Error = 3
+    }
+
+    public static class SaseRoles
+    {
+        public const string Admin = "Admin";
+
+        public static bool IsAdmin(string? role) =>
+            string.Equals(role, Admin, StringComparison.OrdinalIgnoreCase);
     }
 
     public class TemporarySaseUser
@@ -36,5 +45,12 @@ namespace SaseAccessManager.Models
         public string? DS_MOTIVO_REMOCAO { get; set; }
 
         public string? DS_OBSERVACAO_REMOCAO { get; set; }
+
+        /// <summary>Perfil do usuário no SASE (ex: "Admin", "User"). Atualizado pelo SyncWorker.</summary>
+        public string? DS_PERFIL_SASE { get; set; }
+
+        /// <summary>Admins não podem ser excluídos pela API do SASE — o sistema não tenta removê-los.</summary>
+        [NotMapped]
+        public bool IsAdmin => SaseRoles.IsAdmin(DS_PERFIL_SASE);
     }
 }

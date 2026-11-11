@@ -111,6 +111,7 @@ namespace SaseAccessManager.Services
             }
 
             user.ID_USUARIO_PERIMETER = result.UserId!;
+            user.DS_PERFIL_SASE = "User"; // criado pelo SAM sempre como Member/User
 
             await _store.Add(user);
 
@@ -137,6 +138,10 @@ namespace SaseAccessManager.Services
 
             if (user.ST_USUARIO == UserStatus.Removed)
                 return OperationResult.Ok();
+
+            // A API do SASE recusa exclusão de Admin — não tenta, não marca Erro
+            if (user.IsAdmin)
+                return OperationResult.Fail("Usuários Admin não podem ser removidos pelo sistema.");
 
             var result = await _sase.DeleteUser(user.ID_USUARIO_PERIMETER!);
 
@@ -207,6 +212,8 @@ namespace SaseAccessManager.Services
                 return OperationResult<TemporarySaseUser>
                     .Fail("Já existe um usuário ativo com este e-mail no sistema.");
 
+            var saseUser = await _sase.GetUserByEmailAsync(email);
+
             var groupsToTrack = alreadyInGroups
                     .Where(g => !string.IsNullOrWhiteSpace(g) && g != "All Users")
                     .Distinct()
@@ -223,7 +230,8 @@ namespace SaseAccessManager.Services
                 ST_USUARIO = UserStatus.Active,
                 ID_USUARIO_PERIMETER = saseUserId,
                 DS_GRUPO_ACESSO = groupsToTrack,
-                DS_CHAMADO = chamado
+                DS_CHAMADO = chamado,
+                DS_PERFIL_SASE = saseUser?.Perfil
             };
 
             await _store.Add(user);

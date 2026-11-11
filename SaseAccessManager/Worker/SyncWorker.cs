@@ -1,4 +1,5 @@
-﻿using SaseAccessManager.Models;
+﻿using SaseAccessManager.DTOs;
+using SaseAccessManager.Models;
 using SaseAccessManager.Services;
 
 namespace SaseAccessManager.Worker
@@ -65,6 +66,10 @@ namespace SaseAccessManager.Worker
 
             // 2. Buscar todos os usuários ativos no banco local
             var localUsers = await store.GetAll();
+
+            // 2.1 Atualizar perfil (Admin/User) dos usuários locais a partir do SASE
+            await SyncRoles(store, localUsers, saseUsers, dryRun);
+
             var localPerimeterIds = localUsers
                 .Where(u => u.ST_USUARIO == UserStatus.Active &&
                             !string.IsNullOrWhiteSpace(u.ID_USUARIO_PERIMETER))
@@ -76,8 +81,24 @@ namespace SaseAccessManager.Worker
                 .Where(s => !localPerimeterIds.Contains(s.Id))
                 .ToList();
 
+            // Admins não podem ser excluídos pela API — nunca tentar
+            var admins = orphans.Where(o => o.IsAdmin).ToList();
+            orphans = orphans.Where(o => !o.IsAdmin).ToList();
+
             var whitelisted = orphans.Where(o => whitelistSet.Contains(o.Email)).ToList();
-            var toRemove = orphans.Where(o => !whitelistSet.Contains(o.Email)).ToList();
+            var toRemove = new List<SaseUserDto>();
+
+#if !DEBUG
+                toRemove = orphans.Where(o => !whitelistSet.Contains(o.Email)).ToList();
+#endif
+
+            if (admins.Count > 0)
+            {
+                _logger.LogInformation(
+                    "Ignorados {Count} usuários Admin: {Emails}",
+                    admins.Count,
+                    string.Join(", ", admins.Select(a => a.Email)));
+            }
 
             if (whitelisted.Count > 0)
             {
@@ -137,6 +158,61 @@ namespace SaseAccessManager.Worker
                     "Sincronização concluída. Removidos: {Removed}, Erros: {Errors}",
                     removed, errors);
             }
+        }
+
+        private async Task SyncRoles(
+            PostgresUserStore store,
+            List<TemporarySaseUser> localUsers,
+            List<SaseUserDto> saseUsers,
+            bool dryRun)
+        {
+            var saseById = saseUsers
+                .Where(s => !string.IsNullOrWhiteSpace(s.Id))
+                .GroupBy(s => s.Id, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+
+            var updated = 0;
+
+            foreach (var local in localUsers.Where(u =>
+                         u.ST_USUARIO != UserStatus.Removed &&
+                         !string.IsNullOrWhiteSpace(u.ID_USUARIO_PERIMETER)))
+            {
+                if (!saseById.TryGetValue(local.ID_USUARIO_PERIMETER!, out var sase))
+                    continue;
+
+                var perfil = sase.Perfil;
+                var changed = !string.Equals(local.DS_PERFIL_SASE, perfil, StringComparison.OrdinalIgnoreCase);
+
+                // Admin que ficou em Erro por tentativa de remoção recusada pelo SASE: volta a Ativo
+                var fixError = sase.IsAdmin && local.ST_USUARIO == UserStatus.Error;
+
+                if (!changed && !fixError)
+                    continue;
+
+                if (dryRun)
+                {
+                    _logger.LogWarning(
+                        "[DRY-RUN] Perfil de {Email} seria atualizado: {Old} -> {New}{Fix}",
+                        local.DS_EMAIL, local.DS_PERFIL_SASE ?? "(vazio)", perfil,
+                        fixError ? " (e status Erro -> Ativo)" : "");
+                    continue;
+                }
+
+                local.DS_PERFIL_SASE = perfil;
+
+                if (fixError)
+                {
+                    local.ST_USUARIO = UserStatus.Active;
+                    local.DS_ERRO = null;
+                    local.DH_TENTATIVA_REMOCAO = null;
+                }
+
+                await store.Update(local);
+                updated++;
+            }
+
+            if (updated > 0)
+                _logger.LogInformation("Perfil SASE atualizado para {Count} usuário(s).", updated);
         }
 
         private async Task WaitUntilNextRun(CancellationToken token)

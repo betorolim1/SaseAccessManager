@@ -3,10 +3,10 @@ using SaseAccessManager.Models;
 
 namespace SaseAccessManager.Data
 {
-public class AppDbContext : DbContext
+    public class AppDbContext : DbContext
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
- 
+
         public DbSet<TemporarySaseUser> S_USUARIO_SASE { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -31,6 +31,9 @@ public class AppDbContext : DbContext
                 entity.Property(e => e.DS_CHAMADO).HasColumnName("ds_chamado").HasColumnType("text");
                 entity.Property(e => e.DS_MOTIVO_REMOCAO).HasColumnName("ds_motivo_remocao").HasColumnType("text");
                 entity.Property(e => e.DS_OBSERVACAO_REMOCAO).HasColumnName("ds_observacao_remocao").HasMaxLength(500);
+                entity.Property(e => e.DS_PERFIL_SASE).HasColumnName("ds_perfil_sase").HasMaxLength(20);
+
+                entity.Ignore(e => e.IsAdmin);
             });
         }
     }
