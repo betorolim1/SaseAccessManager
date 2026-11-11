@@ -1,4 +1,6 @@
-﻿namespace SaseAccessManager.Models
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace SaseAccessManager.Models
 {
     public enum UserStatus
     {
@@ -32,5 +34,7 @@
         public string? DS_CHAMADO { get; set; }
 
         public string? DS_MOTIVO_REMOCAO { get; set; }
+
+        public string? DS_OBSERVACAO_REMOCAO { get; set; }
     }
 }

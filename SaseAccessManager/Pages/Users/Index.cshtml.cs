@@ -45,24 +45,20 @@ public class IndexModel : PageModel
         await LoadUsers();
     }
 
-    public async Task<IActionResult> OnPostRemove(Guid id)
+    public async Task<IActionResult> OnPostRemove(Guid id, string? observacao)
     {
         var brasilia = TimeZoneInfo.FindSystemTimeZoneById("E. South America Standard Time");
         var dataBrasilia = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, brasilia);
 
         var texto = $"{dataBrasilia:dd/MM/yyyy HH:mm} Horário de Brasília";
 
-        var result = await _service.Remove(id, $"Removido manualmente em {texto}");
+        var result = await _service.Remove(id, $"Removido manualmente em {texto}", observacao);
 
         if (!result.Success)
         {
-            ModelState.AddModelError(string.Empty, result.Error!);
-            ErrorMessage = result.Error;
-
             ToastMessage = result.Error;
             ToastType = "error";
-
-            await LoadUsers();
+            return RedirectToPage();
         }
 
         ToastMessage = "Usuário removido com sucesso.";

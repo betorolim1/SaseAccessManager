@@ -39,9 +39,9 @@ namespace SaseAccessManager.Controllers
             => Ok(await _service.List());
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(Guid id)
+        public async Task<IActionResult> Delete(Guid id, [FromQuery] string? observacao = null)
         {
-            var result = await _service.Remove(id);
+            var result = await _service.Remove(id, "Removido via API", observacao);
 
             if (!result.Success)
                 return NotFound(new { error = result.Error });

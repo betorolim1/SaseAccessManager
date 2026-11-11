@@ -120,8 +120,15 @@ namespace SaseAccessManager.Services
         public async Task<List<TemporarySaseUser>> List()
             => await _store.GetAll();
 
-        public async Task<OperationResult> Remove(Guid id, string? motivo = null)
+        public const int ObservacaoMaxLength = 500;
+
+        public async Task<OperationResult> Remove(Guid id, string? motivo = null, string? observacao = null)
         {
+            observacao = string.IsNullOrWhiteSpace(observacao) ? null : observacao.Trim();
+
+            if (observacao?.Length > ObservacaoMaxLength)
+                return OperationResult.Fail($"Observação excede o limite de {ObservacaoMaxLength} caracteres.");
+
             var users = await _store.GetAll();
 
             var user = users.FirstOrDefault(x => x.ID_USUARIO_SASE == id);
@@ -140,6 +147,7 @@ namespace SaseAccessManager.Services
                 user.ST_USUARIO = UserStatus.Removed;
                 user.DS_ERRO = null;
                 user.DS_MOTIVO_REMOCAO = motivo;
+                user.DS_OBSERVACAO_REMOCAO = observacao;
             }
             else
             {
@@ -293,6 +301,7 @@ namespace SaseAccessManager.Services
             user.DH_TENTATIVA_REMOCAO = null;
             user.DH_CRIACAO = DateTime.UtcNow;
             user.DS_MOTIVO_REMOCAO = null;
+            user.DS_OBSERVACAO_REMOCAO = null;
 
             await _store.Update(user);
 

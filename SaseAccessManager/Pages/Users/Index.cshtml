@@ -245,19 +245,27 @@
                             @if (!string.IsNullOrWhiteSpace(u.DS_MOTIVO_REMOCAO))
                             {
                                 var isAuto = u.DS_MOTIVO_REMOCAO.Contains("automaticamente", StringComparison.OrdinalIgnoreCase);
-                                <span class="motivo-icon" title="@u.DS_MOTIVO_REMOCAO">@(isAuto ? "⏱" : "🗑")</span>
+                                var hasObs = !string.IsNullOrWhiteSpace(u.DS_OBSERVACAO_REMOCAO);
+                                var motivoTitle = hasObs
+                                    ? $"{u.DS_MOTIVO_REMOCAO}\nObs: {u.DS_OBSERVACAO_REMOCAO}"
+                                    : u.DS_MOTIVO_REMOCAO;
+                                <span class="motivo-icon @(hasObs ? "has-obs" : "")"
+                                      title="@motivoTitle"
+                                      data-email="@u.DS_EMAIL"
+                                      data-motivo="@u.DS_MOTIVO_REMOCAO"
+                                      data-obs="@u.DS_OBSERVACAO_REMOCAO">@(isAuto ? "⏱" : "🗑")@(hasObs ? "📝" : "")</span>
                             }
                         </td>
                         <td>
                             <div class="actions">
                                 @if (u.ST_USUARIO != UserStatus.Removed)
                                 {
-                                    <form method="post" asp-page-handler="Remove" class="d-inline">
-                                        <input type="hidden" name="id" value="@u.ID_USUARIO_SASE" />
-                                        <button type="submit" class="btn btn-danger remove-btn" data-email="@u.DS_EMAIL">
-                                            Remover
-                                        </button>
-                                    </form>
+                                    <button type="button"
+                                            class="btn btn-danger remove-btn"
+                                            data-email="@u.DS_EMAIL"
+                                            data-id="@u.ID_USUARIO_SASE">
+                                        Remover
+                                    </button>
                                     <a asp-page="/Users/Create" asp-route-id="@u.ID_USUARIO_SASE" class="btn btn-edit">
                                         Editar
                                     </a>
@@ -323,10 +331,42 @@
         <input type="hidden" id="reactivateDaysField" name="durationDays" value="30" />
     </form>
 
+    <!-- REMOVE MODAL -->
+    <div id="removeModal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <div class="modal-icon">🗑</div>
+            <div class="modal-title">Remover usuário</div>
+            <div class="modal-body">
+                Remover acesso de <strong id="removeEmail"></strong>?<br>
+                O usuário será excluído do Harmony SASE.
+
+                <div class="modal-duration">
+                    <div class="modal-groups-label">Observação (opcional)</div>
+                    <textarea id="removeObs"
+                              class="form-input"
+                              rows="3"
+                              maxlength="500"
+                              placeholder="Ex: desligamento do colaborador, solicitação do chamado 55314123, acesso não mais necessário..."></textarea>
+                    <div class="obs-counter"><span id="removeObsCount">0</span>/500</div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" id="cancelRemoveBtn" class="btn btn-ghost">Cancelar</button>
+                <button type="button" id="confirmRemoveBtn" class="btn btn-danger">Remover</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form oculto para remoção -->
+    <form id="removeForm" method="post" asp-page-handler="Remove" class="d-none">
+        <input type="hidden" id="removeId" name="id" />
+        <input type="hidden" id="removeObsField" name="observacao" />
+    </form>
+
     <!-- CHAMADO MODAL -->
     <div id="chamadoModal" class="modal-overlay hidden">
         <div class="modal-box">
-            <div class="modal-title">Chamado</div>
+            <div class="modal-title" id="chamadoModalTitle">Chamado</div>
             <div class="modal-body">
                 <div class="modal-groups-label" id="chamadoModalEmail"></div>
                 <div id="chamadoModalText" class="chamado-modal-text"></div>
@@ -375,6 +415,7 @@
         // ── Chamado modal ────────────────────────────────────────────────
     document.querySelectorAll('.chamado-truncated').forEach(el => {
         el.addEventListener('click', () => {
+            document.getElementById('chamadoModalTitle').textContent = 'Chamado';
             document.getElementById('chamadoModalEmail').textContent = el.dataset.email;
             document.getElementById('chamadoModalText').textContent = el.dataset.chamado;
             document.getElementById('chamadoModal').classList.remove('hidden');
@@ -396,13 +437,47 @@
         document.getElementById("loadingOverlay").classList.add("hidden");
     }
 
-    // ── Remove ────────────────────────────────────────────────────────
-    document.querySelectorAll(".remove-btn").forEach(btn => {
-        btn.addEventListener("click", function (e) {
-            const email = this.dataset.email;
-            if (!confirm(`Remover acesso de ${email}?`)) {
-                e.preventDefault();
-            }
+    // ── Remove modal ──────────────────────────────────────────────────
+    const removeModal    = document.getElementById('removeModal');
+    const removeEmailEl  = document.getElementById('removeEmail');
+    const removeIdField  = document.getElementById('removeId');
+    const removeObs      = document.getElementById('removeObs');
+    const removeObsField = document.getElementById('removeObsField');
+    const removeObsCount = document.getElementById('removeObsCount');
+
+    removeObs.addEventListener('input', () => {
+        removeObsCount.textContent = removeObs.value.length;
+    });
+
+    document.querySelectorAll('.remove-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            removeEmailEl.textContent  = btn.dataset.email;
+            removeIdField.value        = btn.dataset.id;
+            removeObs.value            = '';
+            removeObsCount.textContent = '0';
+            removeModal.classList.remove('hidden');
+            removeObs.focus();
+        });
+    });
+
+    document.getElementById('cancelRemoveBtn').addEventListener('click', () => {
+        removeModal.classList.add('hidden');
+    });
+
+    document.getElementById('confirmRemoveBtn').addEventListener('click', () => {
+        removeObsField.value = removeObs.value.trim();
+        showLoading("Removendo usuário...");
+        document.getElementById('removeForm').submit();
+    });
+
+    // ── Motivo/observação de remoção (clique abre modal) ──────────────
+    document.querySelectorAll('.motivo-icon.has-obs').forEach(el => {
+        el.addEventListener('click', () => {
+            document.getElementById('chamadoModalTitle').textContent = 'Remoção';
+            document.getElementById('chamadoModalEmail').textContent = el.dataset.email;
+            document.getElementById('chamadoModalText').textContent =
+                `${el.dataset.motivo}\n\nObservação:\n${el.dataset.obs}`;
+            document.getElementById('chamadoModal').classList.remove('hidden');
         });
     });
 

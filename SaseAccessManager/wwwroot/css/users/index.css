@@ -1238,3 +1238,23 @@ tbody tr:nth-child(-n+2) .groups-tooltip::after {
     .th-sortable.asc .sort-arrow {
         transform: rotate(180deg);
     }
+
+.chamado-modal-text {
+    white-space: pre-wrap;
+}
+
+.motivo-icon.has-obs {
+    cursor: pointer;
+}
+
+.obs-counter {
+    font-size: 11px;
+    opacity: .6;
+    text-align: right;
+    margin-top: 4px;
+}
+
+#removeObs {
+    width: 100%;
+    resize: vertical;
+}
