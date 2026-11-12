@@ -353,7 +353,7 @@ namespace SaseAccessManager.Services
             return new BatchOperationResult { Results = results };
         }
 
-        private static SaseCreateUserRequest BuildSaseRequest(TemporarySaseUser user)
+        public static SaseCreateUserRequest BuildSaseRequest(TemporarySaseUser user)
         {
 
             var isGov = IsGovEmail(user.DS_EMAIL);

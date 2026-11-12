@@ -131,5 +131,126 @@ namespace SaseAccessManager.Controllers
                 detalhes = report
             });
         }
+
+        /// <summary>
+        /// Recria no SASE os usuários ativos do banco que não existem mais lá (por e-mail),
+        /// readiciona os grupos e gera o UPDATE de id_usuario_perimeter para PRODUÇÃO.
+        /// POST /api/admin/recreate-missing?dryRun=true  -> só relatório (padrão)
+        /// POST /api/admin/recreate-missing?dryRun=false -> recria de fato
+        /// </summary>
+        [HttpPost("recreate-missing")]
+        public async Task<IActionResult> RecreateMissing([FromQuery] bool dryRun = true, CancellationToken ct = default)
+        {
+            var localUsers = (await _store.GetAll())
+                .Where(u => u.ST_USUARIO == UserStatus.Active)
+                .ToList();
+
+            if (localUsers.Count == 0)
+                return BadRequest(new { error = "Banco sem usuários ativos." });
+
+            var saseUsers = await _sase.GetAllUsersAsync(ct);
+            var groups = await _sase.GetGroupsAsync(ct);
+
+            if (saseUsers.Count == 0 || groups.Count == 0)
+                return StatusCode(502, new { error = $"SASE retornou {saseUsers.Count} usuários e {groups.Count} grupos. Abortado (falha na API?)." });
+
+            var saseEmails = saseUsers
+                .Where(s => !string.IsNullOrWhiteSpace(s.Email))
+                .Select(s => s.Email.Trim())
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var groupById = groups.ToDictionary(g => g.Id, StringComparer.OrdinalIgnoreCase);
+
+            // Mesmo e-mail duplicado no banco: recria uma vez só
+            var missing = localUsers
+                .Where(u => !saseEmails.Contains(u.DS_EMAIL.Trim()))
+                .GroupBy(u => u.DS_EMAIL.Trim(), StringComparer.OrdinalIgnoreCase)
+                .Select(g => g.OrderByDescending(u => u.DH_CRIACAO).First())
+                .ToList();
+
+            string GroupNames(TemporarySaseUser u) => string.Join(", ",
+                (u.DS_GRUPO_ACESSO ?? []).Select(id => groupById.TryGetValue(id, out var g) ? g.Name : id));
+
+            if (dryRun)
+            {
+                return Ok(new
+                {
+                    dryRun,
+                    usuariosAtivosNoBanco = localUsers.Count,
+                    usuariosNoSase = saseUsers.Count,
+                    seriamRecriados = missing.Count,
+                    usuarios = missing.Select(u => new
+                    {
+                        u.DS_EMAIL,
+                        nome = $"{u.NM_USUARIO} {u.NM_SOBRENOME}".Trim(),
+                        idp = UserService.BuildSaseRequest(u).IdpType,
+                        grupos = GroupNames(u)
+                    })
+                });
+            }
+
+            var recreated = new List<object>();
+            var failures = new List<object>();
+            var prodSql = new List<string>
+            {
+                "-- UPDATE para PRODUÇÃO: novos id_usuario_perimeter dos usuários recriados",
+                $"-- Gerado em {DateTime.Now:dd/MM/yyyy HH:mm}",
+                "BEGIN;"
+            };
+
+            foreach (var user in missing)
+            {
+                var create = await _sase.CreateUser(UserService.BuildSaseRequest(user));
+
+                if (!create.Success || string.IsNullOrWhiteSpace(create.UserId))
+                {
+                    var error = create.AlreadyExists ? "SASE diz que já existe (conflito)" : create.Error;
+                    _logger.LogError("Recreate: falha ao recriar {Email}: {Error}", user.DS_EMAIL, error);
+                    failures.Add(new { user.DS_EMAIL, erro = error });
+                    continue;
+                }
+
+                var newId = create.UserId!;
+                var groupErrors = new List<string>();
+
+                foreach (var groupId in user.DS_GRUPO_ACESSO ?? [])
+                {
+                    var add = await _sase.AddUserToGroup(groupId, newId);
+                    if (!add.Success)
+                        groupErrors.Add($"{(groupById.TryGetValue(groupId, out var g) ? g.Name : groupId)}: {add.Error}");
+                }
+
+                // Atualiza o banco onde o app está rodando (local)
+                user.ID_USUARIO_PERIMETER = newId;
+                await _store.Update(user);
+
+                var email = user.DS_EMAIL.Trim().ToLowerInvariant().Replace("'", "''");
+                prodSql.Add(
+                    $"UPDATE s_usuario_sase SET id_usuario_perimeter = '{newId}' " +
+                    $"WHERE lower(ds_email) = '{email}' AND st_usuario = 'Active';");
+
+                _logger.LogInformation("Recreate: {Email} recriado com ID {Id}", user.DS_EMAIL, newId);
+
+                recreated.Add(new
+                {
+                    user.DS_EMAIL,
+                    novoId = newId,
+                    grupos = GroupNames(user),
+                    falhasGrupos = groupErrors
+                });
+            }
+
+            prodSql.Add("COMMIT;");
+
+            return Ok(new
+            {
+                dryRun,
+                recriados = recreated.Count,
+                falhas = failures.Count,
+                usuariosRecriados = recreated,
+                usuariosComFalha = failures,
+                sqlProducao = string.Join("\n", prodSql)
+            });
+        }
     }
 }
