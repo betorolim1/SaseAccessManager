@@ -802,6 +802,10 @@ body {
     display: none;
 }
 
+.required-mark {
+    color: #f87171;
+}
+
 @@keyframes spin {
     to {
         transform: rotate(360deg);

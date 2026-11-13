@@ -96,6 +96,19 @@ public class CreateModel : PageModel
     [Display(Name = "Chamado")]
     public string? Chamado { get; set; }
 
+    [BindProperty]
+    [Display(Name = "Email da chefia imediata")]
+    [Required(ErrorMessage = "Informe o email de pelo menos uma chefia imediata.")]
+    [EmailAddress(ErrorMessage = "Email da chefia imediata inválido.")]
+    [StringLength(254)]
+    public string? EmailChefia1 { get; set; }
+
+    [BindProperty]
+    [Display(Name = "Email da 2ª chefia (opcional)")]
+    [EmailAddress(ErrorMessage = "Email da 2ª chefia inválido.")]
+    [StringLength(254)]
+    public string? EmailChefia2 { get; set; }
+
     public class InputModel
     {
         [Display(Name = "Email")]
@@ -155,6 +168,8 @@ public class CreateModel : PageModel
         UserId = user.ID_USUARIO_SASE;
 
         Chamado = user.DS_CHAMADO;
+        EmailChefia1 = user.DS_EMAIL_CHEFIA_1;
+        EmailChefia2 = user.DS_EMAIL_CHEFIA_2;
 
         return Page();
     }
@@ -179,7 +194,15 @@ public class CreateModel : PageModel
             return RedirectToPage("/Users/Index");
         }
 
-        var result = await _service.CreateBatch(users, DurationDays, SelectedGroups, Chamado);
+        var chefias = UserService.NormalizeChefias(EmailChefia1, EmailChefia2);
+        if (!chefias.Ok)
+        {
+            ToastMessage = chefias.Error;
+            ToastType = "error";
+            return RedirectToPage("/Users/Index");
+        }
+
+        var result = await _service.CreateBatch(users, DurationDays, SelectedGroups, Chamado, EmailChefia1, EmailChefia2);
 
         if (result.FailCount == 0)
         {
@@ -212,6 +235,14 @@ public class CreateModel : PageModel
 
         if (IsEdit)
         {
+            // Valida chefias antes de mexer nos grupos do SASE
+            var chefias = UserService.NormalizeChefias(EmailChefia1, EmailChefia2, Email);
+            if (!chefias.Ok)
+            {
+                ModelState.AddModelError(nameof(EmailChefia1), chefias.Error!);
+                return Page();
+            }
+
             var groupsResult = await _service.UpdateGroups(Email, SelectedGroups);
 
             if (!groupsResult.Success)
@@ -220,7 +251,7 @@ public class CreateModel : PageModel
                 return Page();
             }
 
-            var expirationResult = await _service.UpdateExpiration(UserId.HasValue ? UserId.Value : Guid.Empty, DurationDays, Chamado);
+            var expirationResult = await _service.UpdateExpiration(UserId.HasValue ? UserId.Value : Guid.Empty, DurationDays, Chamado, EmailChefia1, EmailChefia2);
 
             if (!expirationResult.Success)
             {
@@ -238,7 +269,7 @@ public class CreateModel : PageModel
         {
             var import = await _service.ImportExistingUser(
                 Email, Name, LastName, DurationDays, SelectedGroups,
-                SaseUserIdForImport!, ExistingSaseGroupIds, Chamado);
+                SaseUserIdForImport!, ExistingSaseGroupIds, Chamado, EmailChefia1, EmailChefia2);
 
             if (!import.Success)
             {
@@ -257,7 +288,7 @@ public class CreateModel : PageModel
             Name,
             LastName,
             DurationDays,
-            SelectedGroups, Chamado);
+            SelectedGroups, Chamado, EmailChefia1, EmailChefia2);
 
         if (create.UserAlreadyExistsInSase)
         {

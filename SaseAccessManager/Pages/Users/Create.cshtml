@@ -3,13 +3,13 @@
 
 <link rel="stylesheet" href="~/css/users/create.css" asp-append-version="true">
 
-    @if (TempData["ToastMessage"] != null)
-    {
-        <div id="toast" class="toast @(TempData["ToastType"])">
-            @(TempData["ToastType"]?.ToString() == "success" ? "✓" : "✕")
-            @TempData["ToastMessage"]
-        </div>
-    }
+@if (TempData["ToastMessage"] != null)
+{
+    <div id="toast" class="toast @(TempData["ToastType"])">
+        @(TempData["ToastType"]?.ToString() == "success" ? "✓" : "✕")
+        @TempData["ToastMessage"]
+    </div>
+}
 
 @functions {
     string UserInitials(string name) => string.IsNullOrWhiteSpace(name) ? "?" :
@@ -69,7 +69,7 @@
             @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
             {
                 <span>@error.ErrorMessage</span>
-        
+
                 <br />
             }
         </div>
@@ -164,6 +164,31 @@
                               rows="2"
                               placeholder="Ex: 55314123 ou descrição livre da solicitação"
                               maxlength="500"></textarea>
+                </div>
+            </div>
+
+            <!-- SECTION: Chefia imediata -->
+            <div class="card-section">
+                <div class="section-label">Chefia imediata</div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label asp-for="EmailChefia1" class="form-label">Email da chefia imediata <span class="required-mark">*</span></label>
+                        <input asp-for="EmailChefia1"
+                               type="email"
+                               class="form-input"
+                               maxlength="254"
+                               placeholder="chefia@agro.gov.br" />
+                        <span asp-validation-for="EmailChefia1" class="validation"></span>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="EmailChefia2" class="form-label">Email da 2ª chefia (opcional)</label>
+                        <input asp-for="EmailChefia2"
+                               type="email"
+                               class="form-input"
+                               maxlength="254"
+                               placeholder="substituto@agro.gov.br" />
+                        <span asp-validation-for="EmailChefia2" class="validation"></span>
+                    </div>
                 </div>
             </div>
 
@@ -319,7 +344,7 @@
                  b.classList.toggle('is-active', b.dataset.days === val);
              });
          }
-    
+
          function clearPresets() {
              presetBtns.forEach(b => b.classList.remove('is-active'));
          }
@@ -334,17 +359,21 @@
              const originalGroups  = Array.from(checkboxes).map(cb => cb.checked);
              const originalDays    = durationInput.value;
              const originalChamado = chamadoInput ? chamadoInput.value : '';
+             const chefiaInputs    = [document.getElementById('EmailChefia1'), document.getElementById('EmailChefia2')];
+             const originalChefias = chefiaInputs.map(i => i.value);
 
              checkChanges = function () {
                  const groupsChanged   = Array.from(checkboxes).some((cb, i) => cb.checked !== originalGroups[i]);
                  const durationChanged = durationInput.value !== originalDays;
                  const chamadoChanged  = chamadoInput ? chamadoInput.value !== originalChamado : false;
-                 submitBtn.disabled = !(groupsChanged || durationChanged || chamadoChanged);
+                 const chefiaChanged   = chefiaInputs.some((inp, i) => inp.value !== originalChefias[i]);
+                 submitBtn.disabled = !(groupsChanged || durationChanged || chamadoChanged || chefiaChanged);
              };
 
              checkboxes.forEach(cb => cb.addEventListener('change', checkChanges));
              durationInput.addEventListener('input', checkChanges);
              if (chamadoInput) chamadoInput.addEventListener('input', checkChanges);
+             chefiaInputs.forEach(inp => inp.addEventListener('input', checkChanges));
              document.querySelectorAll('.preset-btn').forEach(btn => {
                  btn.addEventListener('click', () => setTimeout(checkChanges, 10));
              });
@@ -595,6 +624,34 @@
                  alert('Informe ao menos um e-mail.');
                  return;
              }
+
+             // Chefia imediata: pelo menos 1 obrigatória
+             const emailRegex = /^[^\s\x40]+\x40[^\s\x40]+\.[^\s\x40]+$/; // \x40 = arroba (evita conflito com Razor)
+             let chefia1 = document.getElementById('EmailChefia1').value.trim();
+             let chefia2 = document.getElementById('EmailChefia2').value.trim();
+
+             // Só a 2ª preenchida: promove para a 1ª (a 1ª é a obrigatória no servidor)
+             if (!chefia1 && chefia2) {
+                 chefia1 = chefia2;
+                 chefia2 = '';
+                 document.getElementById('EmailChefia1').value = chefia1;
+                 document.getElementById('EmailChefia2').value = '';
+             }
+
+             if (!chefia1 && !chefia2) {
+                 alert('Informe o email de pelo menos uma chefia imediata.');
+                 document.getElementById('EmailChefia1').focus();
+                 return;
+             }
+
+             const chefiaInvalida = [chefia1, chefia2].find(c => c && !emailRegex.test(c));
+             if (chefiaInvalida) {
+                 alert(`Email de chefia inválido: "${chefiaInvalida}".`);
+                 return;
+             }
+
+             addHidden('EmailChefia1', chefia1);
+             addHidden('EmailChefia2', chefia2);
 
              document.querySelectorAll('.group-checkbox:checked').forEach(cb => {
                  addHidden('SelectedGroups', cb.value);

@@ -24,9 +24,54 @@ namespace SaseAccessManager.Services
             _sase = sase;
         }
 
-        public async Task<OperationResult<TemporarySaseUser>> Create(
-            string email, string? name, string? lastName, int durationDays, List<string> accessGroups, string? chamado = null)
+        private static readonly System.ComponentModel.DataAnnotations.EmailAddressAttribute EmailValidator = new();
+
+        /// <summary>
+        /// Normaliza e valida as chefias: pelo menos 1 obrigatória, formato de e-mail,
+        /// sem duplicidade e diferente do próprio usuário. Se só a 2ª vier preenchida, ela vira a 1ª.
+        /// </summary>
+        public static (bool Ok, string? Error, string? Chefia1, string? Chefia2) NormalizeChefias(
+            string? chefia1, string? chefia2, string? userEmail = null)
         {
+            static string? Clean(string? s) =>
+                string.IsNullOrWhiteSpace(s) ? null : s.Trim().ToLowerInvariant();
+
+            var c1 = Clean(chefia1);
+            var c2 = Clean(chefia2);
+
+            if (c1 is null && c2 is not null)
+            {
+                c1 = c2;
+                c2 = null;
+            }
+
+            if (c1 is null)
+                return (false, "Informe o email de pelo menos uma chefia imediata.", null, null);
+
+            foreach (var c in new[] { c1, c2 })
+            {
+                if (c is not null && (c.Length > 254 || !EmailValidator.IsValid(c) || !c.Contains('.')))
+                    return (false, $"Email de chefia inválido: {c}", null, null);
+            }
+
+            if (c2 == c1)
+                c2 = null;
+
+            var self = Clean(userEmail);
+            if (self is not null && (c1 == self || c2 == self))
+                return (false, "O usuário não pode ser cadastrado como a própria chefia.", null, null);
+
+            return (true, null, c1, c2);
+        }
+
+        public async Task<OperationResult<TemporarySaseUser>> Create(
+            string email, string? name, string? lastName, int durationDays, List<string> accessGroups,
+            string? chamado = null, string? chefia1 = null, string? chefia2 = null)
+        {
+            var chefias = NormalizeChefias(chefia1, chefia2, email);
+            if (!chefias.Ok)
+                return OperationResult<TemporarySaseUser>.Fail(chefias.Error!);
+
             accessGroups = accessGroups
                 .Where(g => !string.IsNullOrWhiteSpace(g) && g != "All Users")
                 .Select(g => g.Trim())
@@ -64,7 +109,9 @@ namespace SaseAccessManager.Services
                 DH_EXPIRACAO = DateTime.UtcNow.AddDays(durationDays),
                 ST_USUARIO = UserStatus.Active,
                 DS_GRUPO_ACESSO = accessGroups,
-                DS_CHAMADO = chamado
+                DS_CHAMADO = chamado,
+                DS_EMAIL_CHEFIA_1 = chefias.Chefia1,
+                DS_EMAIL_CHEFIA_2 = chefias.Chefia2
             };
 
             var request = BuildSaseRequest(user);
@@ -198,9 +245,14 @@ namespace SaseAccessManager.Services
 
         public async Task<OperationResult<TemporarySaseUser>> ImportExistingUser(
             string email, string? name, string? lastName, int durationDays,
-            List<string> accessGroups, string saseUserId, List<string> alreadyInGroups, string? chamado = null)
+            List<string> accessGroups, string saseUserId, List<string> alreadyInGroups, string? chamado = null,
+            string? chefia1 = null, string? chefia2 = null)
         {
             email = email.Trim().ToLowerInvariant();
+
+            var chefias = NormalizeChefias(chefia1, chefia2, email);
+            if (!chefias.Ok)
+                return OperationResult<TemporarySaseUser>.Fail(chefias.Error!);
 
             var users = await _store.GetAll();
 
@@ -231,7 +283,9 @@ namespace SaseAccessManager.Services
                 ID_USUARIO_PERIMETER = saseUserId,
                 DS_GRUPO_ACESSO = groupsToTrack,
                 DS_CHAMADO = chamado,
-                DS_PERFIL_SASE = saseUser?.Perfil
+                DS_PERFIL_SASE = saseUser?.Perfil,
+                DS_EMAIL_CHEFIA_1 = chefias.Chefia1,
+                DS_EMAIL_CHEFIA_2 = chefias.Chefia2
             };
 
             await _store.Add(user);
@@ -239,7 +293,8 @@ namespace SaseAccessManager.Services
             return OperationResult<TemporarySaseUser>.Ok(user);
         }
 
-        public async Task<OperationResult> UpdateExpiration(Guid id, int durationDays, string? chamado = null)
+        public async Task<OperationResult> UpdateExpiration(
+            Guid id, int durationDays, string? chamado = null, string? chefia1 = null, string? chefia2 = null)
         {
             var user = await _store.GetById(id);
 
@@ -249,8 +304,14 @@ namespace SaseAccessManager.Services
             if (user.ST_USUARIO != UserStatus.Active)
                 return OperationResult.Fail("Apenas usuários ativos podem ter o prazo alterado.");
 
+            var chefias = NormalizeChefias(chefia1, chefia2, user.DS_EMAIL);
+            if (!chefias.Ok)
+                return OperationResult.Fail(chefias.Error!);
+
             user.DH_EXPIRACAO = DateTime.UtcNow.AddDays(durationDays);
             user.DS_CHAMADO = chamado;
+            user.DS_EMAIL_CHEFIA_1 = chefias.Chefia1;
+            user.DS_EMAIL_CHEFIA_2 = chefias.Chefia2;
 
             await _store.Update(user);
 
@@ -318,13 +379,14 @@ namespace SaseAccessManager.Services
 
         public async Task<BatchOperationResult> CreateBatch(
             List<(string Email, string? Name, string? LastName)> users,
-            int durationDays, List<string> accessGroups, string? chamado = null)
+            int durationDays, List<string> accessGroups, string? chamado = null,
+            string? chefia1 = null, string? chefia2 = null)
         {
             var results = new List<BatchUserResult>();
 
             foreach (var (email, name, lastName) in users)
             {
-                var create = await Create(email, name, lastName, durationDays, accessGroups, chamado);
+                var create = await Create(email, name, lastName, durationDays, accessGroups, chamado, chefia1, chefia2);
 
                 if (create.Success)
                 {

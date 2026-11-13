@@ -46,6 +46,12 @@ namespace SaseAccessManager.Models
 
         public string? DS_OBSERVACAO_REMOCAO { get; set; }
 
+        /// <summary>Email da chefia imediata (obrigatório em novos cadastros/edições).</summary>
+        public string? DS_EMAIL_CHEFIA_1 { get; set; }
+
+        /// <summary>Email de uma segunda chefia (opcional).</summary>
+        public string? DS_EMAIL_CHEFIA_2 { get; set; }
+
         /// <summary>Perfil do usuário no SASE (ex: "Admin", "User"). Atualizado pelo SyncWorker.</summary>
         public string? DS_PERFIL_SASE { get; set; }
 

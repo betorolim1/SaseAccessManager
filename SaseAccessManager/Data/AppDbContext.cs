@@ -32,6 +32,8 @@ namespace SaseAccessManager.Data
                 entity.Property(e => e.DS_MOTIVO_REMOCAO).HasColumnName("ds_motivo_remocao").HasColumnType("text");
                 entity.Property(e => e.DS_OBSERVACAO_REMOCAO).HasColumnName("ds_observacao_remocao").HasMaxLength(500);
                 entity.Property(e => e.DS_PERFIL_SASE).HasColumnName("ds_perfil_sase").HasMaxLength(20);
+                entity.Property(e => e.DS_EMAIL_CHEFIA_1).HasColumnName("ds_email_chefia_1").HasMaxLength(254);
+                entity.Property(e => e.DS_EMAIL_CHEFIA_2).HasColumnName("ds_email_chefia_2").HasMaxLength(254);
 
                 entity.Ignore(e => e.IsAdmin);
             });
