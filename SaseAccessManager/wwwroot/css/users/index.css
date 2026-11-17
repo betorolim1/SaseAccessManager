@@ -35,7 +35,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 14px 32px;
+    padding: 10px 32px;
     background: var(--surface);
     border-bottom: 1px solid var(--border);
     position: sticky;
@@ -132,22 +132,33 @@ body {
 
 /* ── MAIN ── */
 .main {
-    max-width: 1280px;
+    width: 100%;
+    max-width: 1720px;
     margin: 0 auto;
-    padding: 20px 32px;
+    padding: 16px 32px 0;
 }
 
 /* ── PAGE HEADER ── */
 .page-header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-end;
-    margin-bottom: 32px;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
 }
+
+    /* título e subtítulo na mesma linha */
+    .page-header > div:first-child {
+        display: flex;
+        align-items: baseline;
+        gap: 14px;
+        flex-wrap: wrap;
+        min-width: 0;
+    }
 
 .page-title {
     font-family: 'Syne', sans-serif;
-    font-size: 28px;
+    font-size: 22px;
     font-weight: 800;
     letter-spacing: -.01em;
     line-height: 1.1;
@@ -158,7 +169,6 @@ body {
 }
 
 .page-subtitle {
-    margin-top: 6px;
     font-size: 13px;
     color: var(--muted);
     font-weight: 300;
@@ -240,77 +250,6 @@ body {
         background: var(--surface2);
     }
 
-/* ── STATS ROW ── */
-.stats-row {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-    margin-bottom: 28px;
-}
-
-.stat-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 20px 22px;
-    position: relative;
-    overflow: hidden;
-    transition: border-color .2s;
-}
-
-    .stat-card:hover {
-        border-color: var(--border2);
-    }
-
-    .stat-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 2px;
-        border-radius: 2px 2px 0 0;
-    }
-
-    .stat-card.green::before {
-        background: var(--green);
-    }
-
-    .stat-card.red::before {
-        background: var(--red);
-    }
-
-    .stat-card.gray::before {
-        background: var(--muted);
-    }
-
-.stat-label {
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: .08em;
-    color: var(--muted);
-    margin-bottom: 10px;
-}
-
-.stat-value {
-    font-family: 'Syne', sans-serif;
-    font-size: 32px;
-    font-weight: 800;
-    line-height: 1;
-}
-
-.stat-card.green .stat-value {
-    color: var(--green);
-}
-
-.stat-card.red .stat-value {
-    color: var(--red);
-}
-
-.stat-card.gray .stat-value {
-    color: var(--muted);
-}
-
 /* ── ALERT ── */
 .alert-error {
     background: rgba(255,77,106,0.1);
@@ -332,16 +271,23 @@ body {
     border-radius: var(--radius);
     overflow: hidden;
     box-shadow: var(--shadow);
-    max-height: calc(100vh - 356px);
-    overflow-y: auto;
 }
 
 .table-toolbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px 20px;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding: 12px 20px;
     border-bottom: 1px solid var(--border);
+}
+
+.toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
 }
 
 .table-toolbar-title {
@@ -394,20 +340,17 @@ tbody tr {
         background: rgba(255,255,255,0.025);
     }
 
-    /* Row accent lines */
+    /* Row accent lines (box-shadow não altera a largura da tabela) */
     tbody tr.row-active td:first-child {
-        border-left: 3px solid var(--green);
-        padding-left: 15px;
+        box-shadow: inset 3px 0 0 var(--green);
     }
 
     tbody tr.row-error td:first-child {
-        border-left: 3px solid var(--red);
-        padding-left: 15px;
+        box-shadow: inset 3px 0 0 var(--red);
     }
 
     tbody tr.row-removed td:first-child {
-        border-left: 3px solid var(--muted);
-        padding-left: 15px;
+        box-shadow: inset 3px 0 0 var(--muted);
         opacity: .6;
     }
 
@@ -546,7 +489,7 @@ tbody td:last-child {
         color: #ffe0e6;
     }
 
-@@keyframes slideIn {
+@keyframes slideIn {
     from {
         opacity: 0;
         transform: translateX(30px);
@@ -626,8 +569,8 @@ tbody td:last-child {
 
 .footer {
     text-align: center;
-    padding: 12px;
-    font-size: 12px;
+    padding: 6px 12px;
+    font-size: 11px;
     color: var(--muted);
     letter-spacing: .03em;
     border-top: 1px solid var(--border);
@@ -1007,25 +950,6 @@ tbody td:last-child {
     max-width: 200px;
 }
 
-/* Tooltip abre para baixo nas primeiras linhas */
-tbody tr:nth-child(-n+2) .groups-tooltip {
-    bottom: auto;
-    top: calc(100% + 10px);
-    transform: translateX(-50%) translateY(-4px);
-}
-
-tbody tr:nth-child(-n+2) .groups-trigger:hover .groups-tooltip {
-    transform: translateX(-50%) translateY(0);
-}
-
-/* Seta aponta para cima quando tooltip está abaixo */
-tbody tr:nth-child(-n+2) .groups-tooltip::after {
-    top: auto;
-    bottom: 100%;
-    border-top-color: transparent;
-    border-bottom-color: var(--surface2);
-}
-
 .d-inline {
     display: inline;
 }
@@ -1148,7 +1072,7 @@ tbody tr:nth-child(-n+2) .groups-tooltip::after {
     background: rgba(248, 113, 113, 0.08);
 }
 
-@@keyframes spin {
+@keyframes spin {
     to {
         transform: rotate(360deg);
     }
@@ -1239,10 +1163,6 @@ tbody tr:nth-child(-n+2) .groups-tooltip::after {
         transform: rotate(180deg);
     }
 
-.chamado-modal-text {
-    white-space: pre-wrap;
-}
-
 .motivo-icon.has-obs {
     cursor: pointer;
 }
@@ -1284,3 +1204,238 @@ tbody tr:nth-child(-n+2) .groups-tooltip::after {
     .expire-permanent .lock-icon {
         font-size: .9em;
     }
+
+/* ── CHIPS DE STATUS (filtro) ── */
+.status-chips {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--muted);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all .15s ease;
+    white-space: nowrap;
+}
+
+    .status-chip::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--muted);
+    }
+
+    .status-chip strong {
+        font-family: 'Syne', sans-serif;
+        font-weight: 700;
+        font-size: 13px;
+        color: var(--text);
+    }
+
+    .status-chip:hover {
+        color: var(--text);
+        border-color: rgba(255,255,255,0.2);
+    }
+
+    .status-chip.chip-active::before {
+        background: var(--green);
+        box-shadow: 0 0 6px var(--green);
+    }
+
+    .status-chip.chip-active strong {
+        color: var(--green);
+    }
+
+    .status-chip.chip-error::before {
+        background: var(--red);
+    }
+
+    .status-chip.chip-error strong {
+        color: var(--red);
+    }
+
+    .status-chip.chip-removed strong {
+        color: var(--muted);
+    }
+
+    .status-chip[data-filter="all"]::before {
+        background: var(--accent);
+    }
+
+    .status-chip.is-active {
+        color: var(--text);
+        background: rgba(79,140,255,0.12);
+        border-color: rgba(79,140,255,0.45);
+    }
+
+/* ── LAYOUT: página ocupa a altura da tela; só a grid rola ── */
+html, body {
+    height: 100%;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.topbar,
+.footer {
+    flex-shrink: 0;
+}
+
+.main {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+    .page-header,
+    .main > .alert-error {
+        flex-shrink: 0;
+    }
+
+.table-wrap {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 12px;
+}
+
+.table-toolbar {
+    flex-shrink: 0;
+}
+
+/* Scroll vertical e horizontal no mesmo container */
+.table-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+    .table-scroll table {
+        min-width: 1200px; /* abaixo disso aparece o scroll lateral */
+    }
+
+    .table-scroll .cell-email,
+    .table-scroll .cell-date,
+    .table-scroll td:last-child {
+        white-space: nowrap;
+    }
+
+    .table-scroll .actions {
+        flex-wrap: nowrap;
+    }
+
+    /* Cabeçalho fixo durante a rolagem */
+    .table-scroll thead th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: var(--surface);
+    }
+
+    .table-scroll::-webkit-scrollbar {
+        height: 8px;
+        width: 8px;
+    }
+
+    .table-scroll::-webkit-scrollbar-thumb {
+        background: rgba(255,255,255,.15);
+        border-radius: 4px;
+    }
+
+    .table-scroll::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .table-scroll::-webkit-scrollbar-corner {
+        background: transparent;
+    }
+
+/* Tooltip de grupos posicionado via JS (não é cortado pelo scroll) */
+.groups-trigger .groups-tooltip.is-floating,
+.groups-trigger:hover .groups-tooltip.is-floating {
+    position: fixed;
+    bottom: auto;
+    right: auto;
+    transform: none;
+    z-index: 1000;
+}
+
+.groups-tooltip.is-floating::after {
+    display: none; /* a seta não acompanha a posição dinâmica */
+}
+
+/* Telas muito baixas: volta a rolar a página inteira */
+@media (max-height: 560px) {
+    body {
+        overflow: auto;
+        display: block;
+        height: auto;
+    }
+
+    .table-scroll {
+        max-height: 60vh;
+    }
+}
+
+/* Tooltips escondidos não podem ocupar espaço no container de scroll */
+.groups-tooltip {
+    display: none;
+}
+
+.groups-trigger:hover .groups-tooltip {
+    display: block;
+}
+
+.motivo-icon::after {
+    display: none;
+    /* abre para a esquerda e quebra linha, em vez de vazar pela direita */
+    left: auto;
+    right: 0;
+    transform: none;
+    white-space: pre-line; /* respeita a quebra entre motivo e observação */
+    width: max-content;
+    max-width: 320px;
+}
+
+.motivo-icon:hover::after {
+    display: block;
+}
+
+/* ── A EXPIRAR (≤ 15 dias) ── */
+.expire-soon {
+    color: var(--amber);
+    font-weight: 600;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+tbody tr.row-active.row-expiring td:first-child {
+    box-shadow: inset 3px 0 0 var(--amber);
+}
+
+.status-chip.chip-expiring::before {
+    background: var(--amber);
+    box-shadow: 0 0 6px var(--amber);
+}
+
+.status-chip.chip-expiring strong {
+    color: var(--amber);
+}

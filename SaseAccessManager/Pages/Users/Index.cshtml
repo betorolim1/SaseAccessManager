@@ -15,6 +15,17 @@
     string GroupName(string groupId) =>
         Model.AllGroups.FirstOrDefault(g => g.Id == groupId)?.Name ?? groupId;
 
+    const int DiasAvisoExpiracao = 15;
+
+    bool IsExpiring(TemporarySaseUser u)
+    {
+        if (u.ST_USUARIO != UserStatus.Active || u.IsAdmin)
+            return false;
+
+        var remaining = u.DH_EXPIRACAO - DateTime.UtcNow;
+        return remaining.TotalSeconds > 0 && Math.Ceiling(remaining.TotalDays) <= DiasAvisoExpiracao;
+    }
+
     string RowClass(UserStatus s) => s switch
     {
         UserStatus.Active => "row-active",
@@ -44,6 +55,7 @@
     var activeCount = Model.Users.Count(u => u.ST_USUARIO == UserStatus.Active);
     var errorCount = Model.Users.Count(u => u.ST_USUARIO == UserStatus.Error);
     var removedCount = Model.Users.Count(u => u.ST_USUARIO == UserStatus.Removed);
+    var expiringCount = Model.Users.Count(IsExpiring);
 }
 
 <!-- TOP BAR -->
@@ -89,22 +101,6 @@
         </div>
     </div>
 
-    <!-- STATS -->
-    <div class="stats-row">
-        <div class="stat-card green">
-            <div class="stat-label">Ativos</div>
-            <div class="stat-value">@activeCount</div>
-        </div>
-        <div class="stat-card red">
-            <div class="stat-label">Com erro</div>
-            <div class="stat-value">@errorCount</div>
-        </div>
-        <div class="stat-card gray">
-            <div class="stat-label">Removidos</div>
-            <div class="stat-value">@removedCount</div>
-        </div>
-    </div>
-
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
         <div class="alert-error">
@@ -115,7 +111,16 @@
     <!-- TABLE -->
     <div class="table-wrap">
         <div class="table-toolbar">
-            <span id="totalCount" class="table-toolbar-title">@Model.Users.Count usuário(s)</span>
+            <div class="toolbar-left">
+                <span id="totalCount" class="table-toolbar-title">@Model.Users.Count registro(s)</span>
+                <div class="status-chips" role="group" aria-label="Filtrar por status">
+                    <button type="button" class="status-chip is-active" data-filter="all">Todos <strong>@Model.Users.Count</strong></button>
+                    <button type="button" class="status-chip chip-active" data-filter="row-active">Ativos <strong>@activeCount</strong></button>
+                    <button type="button" class="status-chip chip-error" data-filter="row-error">Com erro <strong>@errorCount</strong></button>
+                    <button type="button" class="status-chip chip-expiring" data-filter="row-expiring" title="Ativos com @DiasAvisoExpiracao dias ou menos para expirar">A expirar <strong>@expiringCount</strong></button>
+                    <button type="button" class="status-chip chip-removed" data-filter="row-removed">Removidos <strong>@removedCount</strong></button>
+                </div>
+            </div>
             <div class="search-input-wrap">
                 <span class="search-icon">⌕</span>
                 <input id="searchInput"
@@ -125,179 +130,185 @@
             </div>
         </div>
 
-        <table>
-            <thead>
-                <tr>
-                    <th>Email</th>
-                    <th>Nome</th>
-                    <th>Grupos</th>
-                    <th class="th-sortable is-active" data-sort="criado" id="thCriado">
-                        Criado em <span class="sort-arrow">↓</span>
-                    </th>
-                    <th class="th-sortable" data-sort="expira" id="thExpira">
-                        Expira em <span class="sort-arrow">↓</span>
-                    </th>
-                    <th>Chamado</th>
-                    <th>Status</th>
-                    <th>Ações</th>
-                </tr>
-            </thead>
-            <tbody>
-                @if (!Model.Users.Any())
-                {
+        <div class="table-scroll">
+            <table>
+                <thead>
                     <tr>
-                        <td colspan="7">
-                            <div class="empty-state">
-                                <div class="empty-icon">👤</div>
-                                <div class="empty-text">Nenhum usuário encontrado.</div>
-                            </div>
-                        </td>
+                        <th>Email</th>
+                        <th>Nome</th>
+                        <th>Grupos</th>
+                        <th class="th-sortable is-active" data-sort="criado" id="thCriado">
+                            Criado em <span class="sort-arrow">↓</span>
+                        </th>
+                        <th class="th-sortable" data-sort="expira" id="thExpira">
+                            Expira em <span class="sort-arrow">↓</span>
+                        </th>
+                        <th>Chamado</th>
+                        <th>Status</th>
+                        <th>Ações</th>
                     </tr>
-                }
-                @foreach (var u in Model.Users)
-                {
-                    <tr class="@RowClass(u.ST_USUARIO)">
-                        <td class="cell-email">@u.DS_EMAIL</td>
-                        <td class="cell-name">@u.NM_USUARIO @u.NM_SOBRENOME</td>
-                        <td>
-                            <div class="groups-trigger">
-                                <svg class="groups-icon" width="16" height="16" viewBox="0 0 24 24"
-                                     fill="none" stroke="currentColor" stroke-width="2"
-                                     stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                                    <circle cx="9" cy="7" r="4" />
-                                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                                </svg>
-                                <span class="groups-count">@((u.DS_GRUPO_ACESSO?.Count ?? 0) + 1)</span>
+                </thead>
+                <tbody>
+                    @if (!Model.Users.Any())
+                    {
+                        <tr>
+                            <td colspan="7">
+                                <div class="empty-state">
+                                    <div class="empty-icon">👤</div>
+                                    <div class="empty-text">Nenhum usuário encontrado.</div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    @foreach (var u in Model.Users)
+                    {
+                        <tr class="@RowClass(u.ST_USUARIO) @(IsExpiring(u) ? "row-expiring" : "")">
+                            <td class="cell-email">@u.DS_EMAIL</td>
+                            <td class="cell-name">@u.NM_USUARIO @u.NM_SOBRENOME</td>
+                            <td>
+                                <div class="groups-trigger">
+                                    <svg class="groups-icon" width="16" height="16" viewBox="0 0 24 24"
+                                         fill="none" stroke="currentColor" stroke-width="2"
+                                         stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                                        <circle cx="9" cy="7" r="4" />
+                                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                                    </svg>
+                                    <span class="groups-count">@((u.DS_GRUPO_ACESSO?.Count ?? 0) + 1)</span>
 
-                                <div class="groups-tooltip">
-                                    <div class="tooltip-title">Grupos de acesso</div>
+                                    <div class="groups-tooltip">
+                                        <div class="tooltip-title">Grupos de acesso</div>
 
-                                    <div class="tooltip-group is-locked">
-                                        <span class="tooltip-dot locked"></span>
-                                        All Users
-                                        <span class="tooltip-lock-tag">padrão</span>
-                                    </div>
+                                        <div class="tooltip-group is-locked">
+                                            <span class="tooltip-dot locked"></span>
+                                            All Users
+                                            <span class="tooltip-lock-tag">padrão</span>
+                                        </div>
 
-                                    @if (u.DS_GRUPO_ACESSO != null && u.DS_GRUPO_ACESSO.Any())
-                                    {
-                                        @foreach (var gId in u.DS_GRUPO_ACESSO)
+                                        @if (u.DS_GRUPO_ACESSO != null && u.DS_GRUPO_ACESSO.Any())
                                         {
-                                            <div class="tooltip-group">
-                                                <span class="tooltip-dot"></span>
-                                                @GroupName(gId)
-                                            </div>
+                                            @foreach (var gId in u.DS_GRUPO_ACESSO)
+                                            {
+                                                <div class="tooltip-group">
+                                                    <span class="tooltip-dot"></span>
+                                                    @GroupName(gId)
+                                                </div>
+                                            }
                                         }
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="cell-date" data-timestamp="@((long)(u.DH_CRIACAO - DateTime.UnixEpoch).TotalSeconds)">
+                                @u.DH_CRIACAO.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                            </td>
+                            <td data-expire="@(u.IsAdmin ? 253402300799L : (long)(u.DH_EXPIRACAO - DateTime.UnixEpoch).TotalSeconds)">
+                                @if (u.ST_USUARIO == UserStatus.Removed)
+                                {
+                                    <span class="expire-na">—</span>
+                                }
+                                else if (u.IsAdmin)
+                                {
+                                    <span class="expire-permanent" title="Usuários Admin não podem ser excluídos pela API do SASE e não expiram"><span class="lock-icon">🔒</span>Permanente</span>
+                                }
+                                else
+                                {
+                                    var remaining = u.DH_EXPIRACAO - DateTime.UtcNow;
+                                    if (remaining.TotalSeconds <= 0)
+                                    {
+                                        <span class="expire-expired">Expirado</span>
+                                    }
+                                    else if (remaining.TotalDays < 1)
+                                    {
+                                        <span class="expire-today">⚡ Hoje</span>
+                                    }
+                                    else if (Math.Ceiling(remaining.TotalDays) <= DiasAvisoExpiracao)
+                                    {
+                                        <span class="expire-soon" title="Expira em até @DiasAvisoExpiracao dias">⏳ @Math.Ceiling(remaining.TotalDays) dias</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="expire-ok">@Math.Ceiling(remaining.TotalDays) dias</span>
+                                    }
+                                }
+                            </td>
+                            <td class="cell-chamado">
+                                @if (!string.IsNullOrWhiteSpace(u.DS_CHAMADO))
+                                {
+                                    if (u.DS_CHAMADO.Length > 30)
+                                    {
+                                        <span class="chamado-truncated"
+                                              title="Clique para ver completo"
+                                              data-chamado="@u.DS_CHAMADO"
+                                              data-email="@u.DS_EMAIL">
+                                            @u.DS_CHAMADO[..30]…
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span>@u.DS_CHAMADO</span>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="expire-na">—</span>
+                                }
+                            </td>
+                            <td>
+                                <div class="status-cell">
+                                    <span class="@BadgeClass(u.ST_USUARIO)">@StatusLabel(u.ST_USUARIO)</span>
+                                    @if (u.IsAdmin)
+                                    {
+                                        <span class="badge badge-admin">Admin</span>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(u.DS_MOTIVO_REMOCAO))
+                                    {
+                                        var isAuto = u.DS_MOTIVO_REMOCAO.Contains("automaticamente", StringComparison.OrdinalIgnoreCase);
+                                        var hasObs = !string.IsNullOrWhiteSpace(u.DS_OBSERVACAO_REMOCAO);
+                                        var motivoTitle = hasObs
+                                            ? $"{u.DS_MOTIVO_REMOCAO}\nObs: {u.DS_OBSERVACAO_REMOCAO}"
+                                            : u.DS_MOTIVO_REMOCAO;
+                                        <span class="motivo-icon @(hasObs ? "has-obs" : "")"
+                                              title="@motivoTitle"
+                                              data-email="@u.DS_EMAIL"
+                                              data-motivo="@u.DS_MOTIVO_REMOCAO"
+                                              data-obs="@u.DS_OBSERVACAO_REMOCAO">@(isAuto ? "⏱" : "🗑")@(hasObs ? "📝" : "")</span>
                                     }
                                 </div>
-                            </div>
-                        </td>
-                        <td class="cell-date" data-timestamp="@((long)(u.DH_CRIACAO - DateTime.UnixEpoch).TotalSeconds)">
-                            @u.DH_CRIACAO.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
-                        </td>
-                        <td data-expire="@(u.IsAdmin ? 253402300799L : (long)(u.DH_EXPIRACAO - DateTime.UnixEpoch).TotalSeconds)">
-                            @if (u.ST_USUARIO == UserStatus.Removed)
-                            {
-                                <span class="expire-na">—</span>
-                            }
-                            else if (u.IsAdmin)
-                            {
-                                <span class="expire-permanent" title="Usuários Admin não podem ser excluídos pela API do SASE e não expiram"><span class="lock-icon"></span>🔒Permanente</span>
-                            }
-                            else
-                            {
-                                var remaining = u.DH_EXPIRACAO - DateTime.UtcNow;
-                                if (remaining.TotalSeconds <= 0)
-                                {
-                                    <span class="expire-expired">Expirado</span>
-                                }
-                                else if (remaining.TotalDays < 1)
-                                {
-                                    <span class="expire-today">⚡ Hoje</span>
-                                }
-                                else
-                                {
-                                    <span class="expire-ok">@Math.Ceiling(remaining.TotalDays) dias</span>
-                                }
-                            }
-                        </td>
-                        <td class="cell-chamado">
-                            @if (!string.IsNullOrWhiteSpace(u.DS_CHAMADO))
-                            {
-                                if (u.DS_CHAMADO.Length > 30)
-                                {
-                                    <span class="chamado-truncated"
-                                          title="Clique para ver completo"
-                                          data-chamado="@u.DS_CHAMADO"
-                                          data-email="@u.DS_EMAIL">
-                                        @u.DS_CHAMADO[..30]…
-                                    </span>
-                                }
-                                else
-                                {
-                                    <span>@u.DS_CHAMADO</span>
-                                }
-                            }
-                            else
-                            {
-                                <span class="expire-na">—</span>
-                            }
-                        </td>
-                        <td>
-                            <div class="status-cell">
-                                <span class="@BadgeClass(u.ST_USUARIO)">@StatusLabel(u.ST_USUARIO)</span>
-                                @if (u.IsAdmin)
-                                {
-                                    <span class="badge badge-admin">Admin</span>
-                                }
-                                @if (!string.IsNullOrWhiteSpace(u.DS_MOTIVO_REMOCAO))
-                                {
-                                    var isAuto = u.DS_MOTIVO_REMOCAO.Contains("automaticamente", StringComparison.OrdinalIgnoreCase);
-                                    var hasObs = !string.IsNullOrWhiteSpace(u.DS_OBSERVACAO_REMOCAO);
-                                    var motivoTitle = hasObs
-                                        ? $"{u.DS_MOTIVO_REMOCAO}\nObs: {u.DS_OBSERVACAO_REMOCAO}"
-                                        : u.DS_MOTIVO_REMOCAO;
-                                    <span class="motivo-icon @(hasObs ? "has-obs" : "")"
-                                          title="@motivoTitle"
-                                          data-email="@u.DS_EMAIL"
-                                          data-motivo="@u.DS_MOTIVO_REMOCAO"
-                                          data-obs="@u.DS_OBSERVACAO_REMOCAO">@(isAuto ? "⏱" : "🗑")@(hasObs ? "📝" : "")</span>
-                                }
-                            </div>
-                        </td>
-                        <td>
-                            <div class="actions">
-                                @if (u.ST_USUARIO != UserStatus.Removed)
-                                {
-                                    if (!u.IsAdmin)
+                            </td>
+                            <td>
+                                <div class="actions">
+                                    @if (u.ST_USUARIO != UserStatus.Removed)
+                                    {
+                                        if (!u.IsAdmin)
+                                        {
+                                            <button type="button"
+                                                    class="btn btn-danger remove-btn"
+                                                    data-email="@u.DS_EMAIL"
+                                                    data-id="@u.ID_USUARIO_SASE">
+                                                Remover
+                                            </button>
+                                        }
+                                        <a asp-page="/Users/Create" asp-route-id="@u.ID_USUARIO_SASE" class="btn btn-edit">
+                                            Editar
+                                        </a>
+                                    }
+                                    else
                                     {
                                         <button type="button"
-                                                class="btn btn-danger remove-btn"
+                                                class="btn btn-reactivate reactivate-btn"
                                                 data-email="@u.DS_EMAIL"
                                                 data-id="@u.ID_USUARIO_SASE">
-                                            Remover
+                                            Reativar
                                         </button>
                                     }
-                                    <a asp-page="/Users/Create" asp-route-id="@u.ID_USUARIO_SASE" class="btn btn-edit">
-                                        Editar
-                                    </a>
-                                }
-                                else
-                                {
-                                    <button type="button"
-                                            class="btn btn-reactivate reactivate-btn"
-                                            data-email="@u.DS_EMAIL"
-                                            data-id="@u.ID_USUARIO_SASE">
-                                        Reativar
-                                    </button>
-                                }
-                            </div>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <!-- REACTIVATE MODAL -->
@@ -350,7 +361,7 @@
             <div class="modal-icon">🗑</div>
             <div class="modal-title">Remover usuário</div>
             <div class="modal-body">
-                Remover acesso de <strong id="removeEmail"></strong>?<br>
+                Remover acesso de <strong id="removeEmail"></strong><br>
                 O usuário será excluído do Harmony SASE.
 
                 <div class="modal-duration">
@@ -425,7 +436,7 @@
 
 <script nonce="@HttpContext.Items["CSP-Nonce"]">
 
-        // ── Chamado modal ────────────────────────────────────────────────
+    // ── Chamado modal ────────────────────────────────────────────────
     document.querySelectorAll('.chamado-truncated').forEach(el => {
         el.addEventListener('click', () => {
             document.getElementById('chamadoModalTitle').textContent = 'Chamado';
@@ -451,10 +462,10 @@
     }
 
     // ── Remove modal ──────────────────────────────────────────────────
-    const removeModal    = document.getElementById('removeModal');
-    const removeEmailEl  = document.getElementById('removeEmail');
-    const removeIdField  = document.getElementById('removeId');
-    const removeObs      = document.getElementById('removeObs');
+    const removeModal = document.getElementById('removeModal');
+    const removeEmailEl = document.getElementById('removeEmail');
+    const removeIdField = document.getElementById('removeId');
+    const removeObs = document.getElementById('removeObs');
     const removeObsField = document.getElementById('removeObsField');
     const removeObsCount = document.getElementById('removeObsCount');
 
@@ -464,9 +475,9 @@
 
     document.querySelectorAll('.remove-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-            removeEmailEl.textContent  = btn.dataset.email;
-            removeIdField.value        = btn.dataset.id;
-            removeObs.value            = '';
+            removeEmailEl.textContent = btn.dataset.email;
+            removeIdField.value = btn.dataset.id;
+            removeObs.value = '';
             removeObsCount.textContent = '0';
             removeModal.classList.remove('hidden');
             removeObs.focus();
@@ -495,7 +506,7 @@
     });
 
     // ── Refresh ───────────────────────────────────────────────────────
-    document.getElementById("refreshBtn")?.addEventListener("click", function () {
+    document.getElementById("refreshBtn")?.addEventListener("click", function() {
         this.innerText = "↻  Atualizando…";
         location.reload();
     });
@@ -514,38 +525,51 @@
         });
     });
 
-    // ── Search ────────────────────────────────────────────────────────
+    // ── Search + filtro por status ────────────────────────────────────
     const searchInput = document.getElementById('searchInput');
-    const rows        = document.querySelectorAll('tbody tr');
-    const totalCount  = document.getElementById('totalCount');
+    const rows = document.querySelectorAll('tbody tr');
+    const totalCount = document.getElementById('totalCount');
+    const statusChips = document.querySelectorAll('.status-chip');
+    let statusFilter = 'all';
 
     function updateCount(visible) {
         const total = rows.length;
         totalCount.textContent = visible < total
-            ? `${visible} de ${total} usuário(s)`
-            : `${total} usuário(s)`;
+            ? `${visible} de ${total} registro(s)`
+            : `${total} registro(s)`;
     }
 
-    updateCount(rows.length);
-
-    searchInput.addEventListener('input', () => {
+    function applyFilters() {
         const term = searchInput.value.toLowerCase().trim();
         let visible = 0;
         rows.forEach(row => {
-            const match = !term || row.textContent.toLowerCase().includes(term);
-            row.classList.toggle('row-hidden', !match);
-            if (match) visible++;
+            const matchText = !term || row.textContent.toLowerCase().includes(term);
+            const matchStatus = statusFilter === 'all' || row.classList.contains(statusFilter);
+            const show = matchText && matchStatus;
+            row.classList.toggle('row-hidden', !show);
+            if (show) visible++;
         });
         updateCount(visible);
+    }
+
+    statusChips.forEach(chip => {
+        chip.addEventListener('click', () => {
+            statusFilter = chip.dataset.filter;
+            statusChips.forEach(c => c.classList.toggle('is-active', c === chip));
+            applyFilters();
+        });
     });
 
+    searchInput.addEventListener('input', applyFilters);
+    updateCount(rows.length);
+
     // ── Reactivate modal ──────────────────────────────────────────────
-    const reactivateModal     = document.getElementById('reactivateModal');
-    const reactivateEmailEl   = document.getElementById('reactivateEmail');
-    const reactivateIdField   = document.getElementById('reactivateId');
-    const reactivateDays      = document.getElementById('reactivateDays');
+    const reactivateModal = document.getElementById('reactivateModal');
+    const reactivateEmailEl = document.getElementById('reactivateEmail');
+    const reactivateIdField = document.getElementById('reactivateId');
+    const reactivateDays = document.getElementById('reactivateDays');
     const reactivateDaysField = document.getElementById('reactivateDaysField');
-    const reactivatePresets   = document.querySelectorAll('#reactivatePresets .preset-btn');
+    const reactivatePresets = document.querySelectorAll('#reactivatePresets .preset-btn');
 
     function syncReactivatePresets() {
         reactivatePresets.forEach(b =>
@@ -576,8 +600,8 @@
     document.querySelectorAll('.reactivate-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             reactivateEmailEl.textContent = btn.dataset.email;
-            reactivateIdField.value       = btn.dataset.id;
-            reactivateDays.value          = '30';
+            reactivateIdField.value = btn.dataset.id;
+            reactivateDays.value = '30';
             syncReactivatePresets();
             reactivateModal.classList.remove('hidden');
         });
@@ -593,18 +617,18 @@
         document.getElementById('reactivateForm').submit();
     });
 
-        // ── Logs modal ───────────────────────────────────────────────────
-    const logsModal     = document.getElementById('logsModal');
+    // ── Logs modal ───────────────────────────────────────────────────
+    const logsModal = document.getElementById('logsModal');
     const logsContainer = document.getElementById('logsContainer');
-    const logsSearch    = document.getElementById('logsSearch');
+    const logsSearch = document.getElementById('logsSearch');
     let allLogs = [];
 
     function levelClass(level) {
         switch (level) {
-            case 'Warning':  return 'log-warn';
-            case 'Error':    return 'log-error';
+            case 'Warning': return 'log-warn';
+            case 'Error': return 'log-error';
             case 'Critical': return 'log-error';
-            default:         return 'log-info';
+            default: return 'log-info';
         }
     }
 
@@ -612,8 +636,8 @@
         const term = filter.toLowerCase();
         const filtered = term
             ? allLogs.filter(l => l.message.toLowerCase().includes(term)
-                               || l.category.toLowerCase().includes(term)
-                               || l.level.toLowerCase().includes(term))
+                || l.category.toLowerCase().includes(term)
+                || l.level.toLowerCase().includes(term))
             : allLogs;
 
         while (logsContainer.firstChild)
@@ -690,6 +714,30 @@
     document.getElementById('refreshLogsBtn').addEventListener('click', loadLogs);
 
     logsSearch.addEventListener('input', () => renderLogs(logsSearch.value));
+
+    // ── Tooltip de grupos (posição fixa, para não ser cortado pelo scroll da tabela) ──
+    document.querySelectorAll('.groups-trigger').forEach(trigger => {
+        const tip = trigger.querySelector('.groups-tooltip');
+        if (!tip) return;
+
+        trigger.addEventListener('mouseenter', () => {
+            const r = trigger.getBoundingClientRect();
+            tip.classList.add('is-floating');
+
+            const tipH = tip.offsetHeight;
+            const tipW = tip.offsetWidth;
+            const above = r.top - tipH - 8;
+
+            tip.style.top = (above > 8 ? above : r.bottom + 8) + 'px';
+            tip.style.left = Math.min(
+                Math.max(8, r.left + r.width / 2 - tipW / 2),
+                window.innerWidth - tipW - 8) + 'px';
+        });
+
+        trigger.addEventListener('mouseleave', () => {
+            tip.classList.remove('is-floating');
+        });
+    });
 
     // ── Sort ──────────────────────────────────────────────────────────
     const tbody = document.querySelector('tbody');
