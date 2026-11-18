@@ -43,8 +43,7 @@ namespace SaseAccessManager.Worker
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Erro ao executar sincronização SASE: {Erro}",
-                            ex.GetBaseException().Message);
+                    _logger.LogError(ex, "Erro ao executar sincronização SASE.");
                 }
             }
         }
@@ -112,6 +111,19 @@ namespace SaseAccessManager.Worker
             if (toRemove.Count == 0)
             {
                 _logger.LogInformation("Nenhum usuário órfão para remover.");
+                return;
+            }
+
+            // Trava: muitos órfãos de uma vez indica problema (banco vazio, IDs desalinhados etc.), não limpeza normal
+            const int MaxRemocoesPorExecucao = 15;
+
+            if (toRemove.Count > MaxRemocoesPorExecucao)
+            {
+                _logger.LogCritical(
+                    "Sync ABORTADO: {Count} órfãos encontrados (limite {Max}). Nenhum usuário foi removido. " +
+                    "Verifique se o banco está alinhado com o SASE. Primeiros: {Emails}",
+                    toRemove.Count, MaxRemocoesPorExecucao,
+                    string.Join(", ", toRemove.Take(10).Select(o => o.Email)));
                 return;
             }
 
@@ -216,21 +228,17 @@ namespace SaseAccessManager.Worker
                 _logger.LogInformation("Perfil SASE atualizado para {Count} usuário(s).", updated);
         }
 
+        private static readonly int[] RunHours = { 0, 6, 12, 18 };
+
         private async Task WaitUntilNextRun(CancellationToken token)
         {
             var now = DateTime.Now;
 
-            var today00 = DateTime.Today;
-            var today12 = DateTime.Today.AddHours(12);
-
-            DateTime nextRun;
-
-            if (now < today00)
-                nextRun = today00;
-            else if (now < today12)
-                nextRun = today12;
-            else
-                nextRun = today00.AddDays(1);
+            var nextRun = RunHours
+                .Select(h => DateTime.Today.AddHours(h))
+                .Where(t => t > now)
+                .DefaultIfEmpty(DateTime.Today.AddDays(1).AddHours(RunHours.Min()))
+                .First();
 
             var delay = nextRun - now;
 
