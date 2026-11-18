@@ -318,7 +318,12 @@ namespace SaseAccessManager.Services
             return OperationResult.Ok();
         }
 
-        public async Task<OperationResult<TemporarySaseUser>> Reactivate(Guid id, int durationDays)
+        // Mesma regra da tela de criação: letras sem acento, espaço, apóstrofo e hífen
+        private static readonly System.Text.RegularExpressions.Regex NomeValido =
+            new(@"^[A-Za-z '\-]+$", System.Text.RegularExpressions.RegexOptions.Compiled);
+
+        public async Task<OperationResult<TemporarySaseUser>> Reactivate(
+            Guid id, int durationDays, string? name = null, string? lastName = null)
         {
             var user = await _store.GetById(id);
 
@@ -327,6 +332,27 @@ namespace SaseAccessManager.Services
 
             if (user.ST_USUARIO == UserStatus.Active)
                 return OperationResult<TemporarySaseUser>.Fail("Usuário já está ativo.");
+
+            // Nome/sobrenome corrigidos no modal de reativação (opcional)
+            if (name is not null || lastName is not null)
+            {
+                var nome = (name ?? "").Trim();
+                var sobrenome = string.IsNullOrWhiteSpace(lastName) ? null : lastName.Trim();
+
+                if (nome.Length == 0)
+                    return OperationResult<TemporarySaseUser>.Fail("Nome é obrigatório.");
+
+                if (nome.Length > 100 || sobrenome?.Length > 100)
+                    return OperationResult<TemporarySaseUser>.Fail("Nome ou sobrenome excede 100 caracteres.");
+
+                if (!NomeValido.IsMatch(nome) || (sobrenome is not null && !NomeValido.IsMatch(sobrenome)))
+                    return OperationResult<TemporarySaseUser>.Fail(
+                        "Nome e sobrenome devem conter apenas letras sem acento, espaços, apóstrofos ou hífens.");
+
+                // Só é gravado no banco se a reativação no SASE der certo (Update no final)
+                user.NM_USUARIO = nome;
+                user.NM_SOBRENOME = sobrenome;
+            }
 
             // Garante que não existe outro registro ativo com o mesmo email
             var users = await _store.GetAll();
@@ -371,6 +397,7 @@ namespace SaseAccessManager.Services
             user.DH_CRIACAO = DateTime.UtcNow;
             user.DS_MOTIVO_REMOCAO = null;
             user.DS_OBSERVACAO_REMOCAO = null;
+            user.DS_PERFIL_SASE = "User"; // recriado pelo SAM sempre como Member
 
             await _store.Update(user);
 

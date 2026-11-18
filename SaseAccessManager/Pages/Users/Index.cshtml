@@ -112,7 +112,7 @@
     <div class="table-wrap">
         <div class="table-toolbar">
             <div class="toolbar-left">
-                <span id="totalCount" class="table-toolbar-title">@Model.Users.Count registro(s)</span>
+                <span id="totalCount" class="table-toolbar-title">@Model.Users.Count usuário(s)</span>
                 <div class="status-chips" role="group" aria-label="Filtrar por status">
                     <button type="button" class="status-chip is-active" data-filter="all">Todos <strong>@Model.Users.Count</strong></button>
                     <button type="button" class="status-chip chip-active" data-filter="row-active">Ativos <strong>@activeCount</strong></button>
@@ -298,7 +298,9 @@
                                         <button type="button"
                                                 class="btn btn-reactivate reactivate-btn"
                                                 data-email="@u.DS_EMAIL"
-                                                data-id="@u.ID_USUARIO_SASE">
+                                                data-id="@u.ID_USUARIO_SASE"
+                                                data-name="@u.NM_USUARIO"
+                                                data-lastname="@u.NM_SOBRENOME">
                                             Reativar
                                         </button>
                                     }
@@ -319,6 +321,18 @@
             <div class="modal-body">
                 Reativando acesso de <strong id="reactivateEmail"></strong>
                 O usuário será recriado no SASE e voltará a ter acesso aos grupos anteriores.
+
+                <div class="modal-duration">
+                    <div class="modal-groups-label reactivate-name-label">
+                        Nome no SASE
+                        <button type="button" id="reactivateStripAccents" class="btn btn-ghost btn-xs">Remover acentos</button>
+                    </div>
+                    <div class="reactivate-name-grid">
+                        <input type="text" id="reactivateName" class="form-input" maxlength="100" placeholder="Nome" />
+                        <input type="text" id="reactivateLastName" class="form-input" maxlength="100" placeholder="Sobrenome" />
+                    </div>
+                    <div id="reactivateNameError" class="reactivate-name-error hidden"></div>
+                </div>
 
                 <div class="modal-duration">
                     <div class="modal-groups-label">Duração do acesso</div>
@@ -353,6 +367,8 @@
     <form id="reactivateForm" method="post" asp-page-handler="Reactivate" class="d-none">
         <input type="hidden" id="reactivateId" name="id" />
         <input type="hidden" id="reactivateDaysField" name="durationDays" value="30" />
+        <input type="hidden" id="reactivateNameField" name="name" />
+        <input type="hidden" id="reactivateLastNameField" name="lastName" />
     </form>
 
     <!-- REMOVE MODAL -->
@@ -361,7 +377,7 @@
             <div class="modal-icon">🗑</div>
             <div class="modal-title">Remover usuário</div>
             <div class="modal-body">
-                Remover acesso de <strong id="removeEmail"></strong><br>
+                Remover acesso de <strong id="removeEmail"></strong>?<br>
                 O usuário será excluído do Harmony SASE.
 
                 <div class="modal-duration">
@@ -506,7 +522,7 @@
     });
 
     // ── Refresh ───────────────────────────────────────────────────────
-    document.getElementById("refreshBtn")?.addEventListener("click", function() {
+    document.getElementById("refreshBtn")?.addEventListener("click", function () {
         this.innerText = "↻  Atualizando…";
         location.reload();
     });
@@ -535,8 +551,8 @@
     function updateCount(visible) {
         const total = rows.length;
         totalCount.textContent = visible < total
-            ? `${visible} de ${total} registro(s)`
-            : `${total} registro(s)`;
+            ? `${visible} de ${total} usuário(s)`
+            : `${total} usuário(s)`;
     }
 
     function applyFilters() {
@@ -597,12 +613,47 @@
         syncReactivatePresets();
     });
 
+    // Nome/sobrenome editáveis na reativação (o SASE recusa acentos)
+    const reactivateName = document.getElementById('reactivateName');
+    const reactivateLastName = document.getElementById('reactivateLastName');
+    const reactivateNameError = document.getElementById('reactivateNameError');
+    const nomeValidoRegex = /^[a-z '-]+$/i;
+
+    const removerAcentos = txt => txt.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+    function validarNomeReativacao() {
+        const nome = reactivateName.value.trim();
+        const sobrenome = reactivateLastName.value.trim();
+        let erro = null;
+
+        if (!nome)
+            erro = 'Informe o nome.';
+        else if (!nomeValidoRegex.test(nome) || (sobrenome && !nomeValidoRegex.test(sobrenome)))
+            erro = 'Use apenas letras sem acento, espaços, apóstrofos ou hífens. Clique em "Remover acentos".';
+
+        reactivateNameError.textContent = erro || '';
+        reactivateNameError.classList.toggle('hidden', !erro);
+        [reactivateName, reactivateLastName].forEach(i => i.classList.toggle('is-invalid', !!erro));
+        return !erro;
+    }
+
+    document.getElementById('reactivateStripAccents').addEventListener('click', () => {
+        reactivateName.value = removerAcentos(reactivateName.value);
+        reactivateLastName.value = removerAcentos(reactivateLastName.value);
+        validarNomeReativacao();
+    });
+
+    [reactivateName, reactivateLastName].forEach(i => i.addEventListener('input', validarNomeReativacao));
+
     document.querySelectorAll('.reactivate-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             reactivateEmailEl.textContent = btn.dataset.email;
             reactivateIdField.value = btn.dataset.id;
+            reactivateName.value = btn.dataset.name || '';
+            reactivateLastName.value = btn.dataset.lastname || '';
             reactivateDays.value = '30';
             syncReactivatePresets();
+            validarNomeReativacao();
             reactivateModal.classList.remove('hidden');
         });
     });
@@ -612,7 +663,14 @@
     });
 
     document.getElementById('confirmReactivateBtn').addEventListener('click', () => {
+        if (!validarNomeReativacao()) {
+            reactivateName.focus();
+            return;
+        }
+
         reactivateDaysField.value = reactivateDays.value;
+        document.getElementById('reactivateNameField').value = reactivateName.value.trim();
+        document.getElementById('reactivateLastNameField').value = reactivateLastName.value.trim();
         showLoading("Reativando usuário...");
         document.getElementById('reactivateForm').submit();
     });

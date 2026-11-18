@@ -79,9 +79,9 @@ public class IndexModel : PageModel
         );
     }
 
-    public async Task<IActionResult> OnPostReactivate(Guid id, int durationDays = 30)
+    public async Task<IActionResult> OnPostReactivate(Guid id, int durationDays = 30, string? name = null, string? lastName = null)
     {
-        var result = await _service.Reactivate(id, durationDays);
+        var result = await _service.Reactivate(id, durationDays, name, lastName);
 
         if (!result.Success)
         {
