@@ -43,7 +43,8 @@ namespace SaseAccessManager.Worker
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Erro ao executar sincronização SASE.");
+                    _logger.LogError(ex, "Erro ao executar sincronização SASE: {Erro}",
+                            ex.GetBaseException().Message);
                 }
             }
         }

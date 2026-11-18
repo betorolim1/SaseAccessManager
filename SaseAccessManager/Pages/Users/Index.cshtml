@@ -79,6 +79,19 @@
     </div>
 </div>
 
+<!-- Ícone de grupos (definido uma vez, reaproveitado em todas as linhas) -->
+<svg class="svg-sprite" width="0" height="0" aria-hidden="true" focusable="false">
+    <symbol id="icon-groups" viewBox="0 0 24 24">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </symbol>
+</svg>
+
+<!-- Tooltip de grupos único, preenchido via JS -->
+<div id="groupsTooltip" class="groups-tooltip-float" role="tooltip"></div>
+
 <!-- MAIN CONTENT -->
 <div class="main">
 
@@ -166,37 +179,9 @@
                             <td class="cell-email">@u.DS_EMAIL</td>
                             <td class="cell-name">@u.NM_USUARIO @u.NM_SOBRENOME</td>
                             <td>
-                                <div class="groups-trigger">
-                                    <svg class="groups-icon" width="16" height="16" viewBox="0 0 24 24"
-                                         fill="none" stroke="currentColor" stroke-width="2"
-                                         stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                                        <circle cx="9" cy="7" r="4" />
-                                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                                    </svg>
+                                <div class="groups-trigger" data-groups="@(string.Join("|", (u.DS_GRUPO_ACESSO ?? new List<string>()).Select(GroupName)))">
+                                    <svg class="groups-icon" width="16" height="16" aria-hidden="true"><use href="#icon-groups"></use></svg>
                                     <span class="groups-count">@((u.DS_GRUPO_ACESSO?.Count ?? 0) + 1)</span>
-
-                                    <div class="groups-tooltip">
-                                        <div class="tooltip-title">Grupos de acesso</div>
-
-                                        <div class="tooltip-group is-locked">
-                                            <span class="tooltip-dot locked"></span>
-                                            All Users
-                                            <span class="tooltip-lock-tag">padrão</span>
-                                        </div>
-
-                                        @if (u.DS_GRUPO_ACESSO != null && u.DS_GRUPO_ACESSO.Any())
-                                        {
-                                            @foreach (var gId in u.DS_GRUPO_ACESSO)
-                                            {
-                                                <div class="tooltip-group">
-                                                    <span class="tooltip-dot"></span>
-                                                    @GroupName(gId)
-                                                </div>
-                                            }
-                                        }
-                                    </div>
                                 </div>
                             </td>
                             <td class="cell-date" data-timestamp="@((long)(u.DH_CRIACAO - DateTime.UnixEpoch).TotalSeconds)">
@@ -555,11 +540,18 @@
             : `${total} usuário(s)`;
     }
 
+    // Texto de busca calculado uma vez por linha (inclui os nomes dos grupos)
+    const searchText = new Map();
+    rows.forEach(row => {
+        const groups = row.querySelector('.groups-trigger')?.dataset.groups || '';
+        searchText.set(row, (row.textContent + ' ' + groups.replaceAll('|', ' ')).toLowerCase());
+    });
+
     function applyFilters() {
         const term = searchInput.value.toLowerCase().trim();
         let visible = 0;
         rows.forEach(row => {
-            const matchText = !term || row.textContent.toLowerCase().includes(term);
+            const matchText = !term || searchText.get(row).includes(term);
             const matchStatus = statusFilter === 'all' || row.classList.contains(statusFilter);
             const show = matchText && matchStatus;
             row.classList.toggle('row-hidden', !show);
@@ -773,29 +765,65 @@
 
     logsSearch.addEventListener('input', () => renderLogs(logsSearch.value));
 
-    // ── Tooltip de grupos (posição fixa, para não ser cortado pelo scroll da tabela) ──
-    document.querySelectorAll('.groups-trigger').forEach(trigger => {
-        const tip = trigger.querySelector('.groups-tooltip');
-        if (!tip) return;
+    // ── Tooltip de grupos: um só elemento, montado ao passar o mouse ──
+    const groupsTooltip = document.getElementById('groupsTooltip');
+    const gridBody = document.querySelector('tbody');
+    const gridScroll = document.querySelector('.table-scroll');
 
-        trigger.addEventListener('mouseenter', () => {
-            const r = trigger.getBoundingClientRect();
-            tip.classList.add('is-floating');
+    function buildGroupsTooltip(names) {
+        while (groupsTooltip.firstChild) groupsTooltip.removeChild(groupsTooltip.firstChild);
 
-            const tipH = tip.offsetHeight;
-            const tipW = tip.offsetWidth;
-            const above = r.top - tipH - 8;
+        const title = document.createElement('div');
+        title.className = 'tooltip-title';
+        title.textContent = 'Grupos de acesso';
+        groupsTooltip.appendChild(title);
 
-            tip.style.top = (above > 8 ? above : r.bottom + 8) + 'px';
-            tip.style.left = Math.min(
-                Math.max(8, r.left + r.width / 2 - tipW / 2),
-                window.innerWidth - tipW - 8) + 'px';
-        });
+        const addItem = (text, locked) => {
+            const item = document.createElement('div');
+            item.className = 'tooltip-group' + (locked ? ' is-locked' : '');
+            const dot = document.createElement('span');
+            dot.className = 'tooltip-dot' + (locked ? ' locked' : '');
+            item.appendChild(dot);
+            item.appendChild(document.createTextNode(text));
+            if (locked) {
+                const tag = document.createElement('span');
+                tag.className = 'tooltip-lock-tag';
+                tag.textContent = 'padrão';
+                item.appendChild(tag);
+            }
+            groupsTooltip.appendChild(item);
+        };
 
-        trigger.addEventListener('mouseleave', () => {
-            tip.classList.remove('is-floating');
-        });
+        addItem('All Users', true);
+        names.forEach(n => addItem(n, false));
+    }
+
+    gridBody.addEventListener('mouseover', e => {
+        const trigger = e.target.closest('.groups-trigger');
+        if (!trigger || trigger.contains(e.relatedTarget)) return;
+
+        const names = (trigger.dataset.groups || '').split('|').filter(Boolean);
+        buildGroupsTooltip(names);
+        groupsTooltip.classList.add('is-visible');
+
+        const r = trigger.getBoundingClientRect();
+        const tipH = groupsTooltip.offsetHeight;
+        const tipW = groupsTooltip.offsetWidth;
+        const above = r.top - tipH - 8;
+
+        groupsTooltip.style.top = (above > 8 ? above : r.bottom + 8) + 'px';
+        groupsTooltip.style.left = Math.min(
+            Math.max(8, r.left + r.width / 2 - tipW / 2),
+            window.innerWidth - tipW - 8) + 'px';
     });
+
+    gridBody.addEventListener('mouseout', e => {
+        const trigger = e.target.closest('.groups-trigger');
+        if (!trigger || trigger.contains(e.relatedTarget)) return;
+        groupsTooltip.classList.remove('is-visible');
+    });
+
+    gridScroll.addEventListener('scroll', () => groupsTooltip.classList.remove('is-visible'), { passive: true });
 
     // ── Sort ──────────────────────────────────────────────────────────
     const tbody = document.querySelector('tbody');

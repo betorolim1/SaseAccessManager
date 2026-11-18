@@ -63,7 +63,7 @@ namespace SaseAccessManager.Worker
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Erro ao processar expiração.");
+                    _logger.LogError(ex, "Erro ao processar expiração: {Erro}", ex.GetBaseException().Message);
                 }
             }
         }

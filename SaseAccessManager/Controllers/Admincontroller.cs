@@ -4,6 +4,7 @@ using SaseAccessManager.Services;
 
 namespace SaseAccessManager.Controllers
 {
+    #if DEBUG
     /// <summary>
     /// Ferramentas administrativas de recuperação.
     /// POST /api/admin/resync-groups?dryRun=true   -> só relatório (padrão)
@@ -253,4 +254,5 @@ namespace SaseAccessManager.Controllers
             });
         }
     }
+#endif
 }

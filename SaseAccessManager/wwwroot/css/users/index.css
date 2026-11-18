@@ -648,7 +648,38 @@ tbody td:last-child {
 .groups-icon {
     color: var(--muted);
     transition: color 0.15s ease;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
+
+/* Sprite de ícones (definido uma vez na página, invisível) */
+.svg-sprite {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+}
+
+/* ── TOOLTIP DE GRUPOS (elemento único, posicionado via JS) ── */
+.groups-tooltip-float {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 12px 16px;
+    min-width: 200px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+    pointer-events: none;
+}
+
+    .groups-tooltip-float.is-visible {
+        display: block;
+    }
 
 .groups-count {
     font-size: 12px;
@@ -669,42 +700,6 @@ tbody td:last-child {
 .groups-trigger:hover .groups-count {
     color: var(--accent);
     background: rgba(79, 140, 255, 0.1);
-}
-
-/* ── TOOLTIP ── */
-.groups-tooltip {
-    position: absolute;
-    bottom: calc(100% + 10px);
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--surface2);
-    border: 1px solid var(--border2);
-    border-radius: 10px;
-    padding: 12px 16px;
-    min-width: 200px;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
-    z-index: 50;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.18s ease, transform 0.18s ease;
-    transform: translateX(-50%) translateY(4px);
-}
-
-.groups-trigger:hover .groups-tooltip {
-    opacity: 1;
-    pointer-events: auto;
-    transform: translateX(-50%) translateY(0);
-}
-
-/* Seta da tooltip */
-.groups-tooltip::after {
-    content: '';
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    border: 6px solid transparent;
-    border-top-color: var(--surface2);
 }
 
 .tooltip-title {
@@ -1368,20 +1363,6 @@ body {
         background: transparent;
     }
 
-/* Tooltip de grupos posicionado via JS (não é cortado pelo scroll) */
-.groups-trigger .groups-tooltip.is-floating,
-.groups-trigger:hover .groups-tooltip.is-floating {
-    position: fixed;
-    bottom: auto;
-    right: auto;
-    transform: none;
-    z-index: 1000;
-}
-
-.groups-tooltip.is-floating::after {
-    display: none; /* a seta não acompanha a posição dinâmica */
-}
-
 /* Telas muito baixas: volta a rolar a página inteira */
 @media (max-height: 560px) {
     body {
@@ -1395,15 +1376,7 @@ body {
     }
 }
 
-/* Tooltips escondidos não podem ocupar espaço no container de scroll */
-.groups-tooltip {
-    display: none;
-}
-
-.groups-trigger:hover .groups-tooltip {
-    display: block;
-}
-
+/* Tooltip do motivo: escondido não ocupa espaço no container de scroll */
 .motivo-icon::after {
     display: none;
     /* abre para a esquerda e quebra linha, em vez de vazar pela direita */
@@ -1471,4 +1444,57 @@ tbody tr.row-active.row-expiring td:first-child {
     font-size: 11px;
     text-transform: none;
     letter-spacing: 0;
+}
+
+/* ── Performance da grid ── */
+
+/* Larguras definidas pelo cabeçalho: o navegador não precisa ler todas as linhas */
+.table-scroll table {
+    table-layout: fixed;
+}
+
+.table-scroll thead th:nth-child(1) {
+    width: 22%;
+}
+/* Email   */
+.table-scroll thead th:nth-child(2) {
+    width: 17%;
+}
+/* Nome    */
+.table-scroll thead th:nth-child(3) {
+    width: 80px;
+}
+/* Grupos  */
+.table-scroll thead th:nth-child(4) {
+    width: 140px;
+}
+/* Criado  */
+.table-scroll thead th:nth-child(5) {
+    width: 120px;
+}
+/* Expira  */
+.table-scroll thead th:nth-child(6) {
+    width: 16%;
+}
+/* Chamado */
+.table-scroll thead th:nth-child(7) {
+    width: 150px;
+}
+/* Status  */
+.table-scroll thead th:nth-child(8) {
+    width: 170px;
+}
+/* Ações   */
+
+/* Texto que não couber vira reticências, em vez de alargar a coluna */
+.table-scroll .cell-email,
+.table-scroll .cell-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Só renderiza as linhas que estão visíveis na tela */
+.table-scroll tbody tr {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 68px;
 }

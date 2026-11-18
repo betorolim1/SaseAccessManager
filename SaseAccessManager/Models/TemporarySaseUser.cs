@@ -14,8 +14,13 @@ namespace SaseAccessManager.Models
     {
         public const string Admin = "Admin";
 
+        /// <summary>
+        /// Qualquer role administrativa do SASE ("Admin", "Primary Administrator", ...).
+        /// O SASE não permite excluir esses usuários, então o SAM nunca tenta.
+        /// </summary>
         public static bool IsAdmin(string? role) =>
-            string.Equals(role, Admin, StringComparison.OrdinalIgnoreCase);
+            !string.IsNullOrWhiteSpace(role) &&
+            role.Contains("admin", StringComparison.OrdinalIgnoreCase);
     }
 
     public class TemporarySaseUser

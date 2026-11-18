@@ -6,7 +6,7 @@
 BEGIN;
 
 ALTER TABLE s_usuario_sase
-    ADD COLUMN ds_perfil_sase VARCHAR(20) NULL;
+    ADD COLUMN ds_perfil_sase VARCHAR(50) NULL;
 
 COMMENT ON COLUMN s_usuario_sase.ds_perfil_sase
     IS 'Perfil do usuário no Harmony SASE (Admin, User). Atualizado pela sincronização';

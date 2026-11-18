@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.Identity.Web;
@@ -11,6 +12,7 @@ using SaseAccessManager.Logging;
 using SaseAccessManager.Options;
 using SaseAccessManager.Services;
 using SaseAccessManager.Worker;
+using System.IO.Compression;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
 
@@ -108,9 +110,21 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.KnownProxies.Clear();
 });
 
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.Providers.Add<BrotliCompressionProvider>();
+    options.Providers.Add<GzipCompressionProvider>();
+});
+
+builder.Services.Configure<BrotliCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
+builder.Services.Configure<GzipCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
+
 var app = builder.Build();
 
 app.UseForwardedHeaders();
+
+app.UseResponseCompression();
 
 app.Use(async (context, next) =>
 {
@@ -180,8 +194,10 @@ app.MapGet("/api/logs", (InMemoryLogStore store) =>
 #endif
 ;
 
+#if DEBUG
 app.UseSwagger();
 app.UseSwaggerUI();
+#endif
 
 #if !DEBUG
 app.UseHttpsRedirection();
