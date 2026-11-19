@@ -174,8 +174,8 @@ body {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    overflow: hidden;
     box-shadow: var(--shadow);
+    /* sem overflow: hidden — ele impediria a barra de ações de ficar fixa (sticky) */
 }
 
 .card-section {
@@ -277,9 +277,52 @@ body {
     display: flex;
     flex-direction: column;
     gap: 8px;
+    max-height: 340px;
+    overflow-y: auto;
+    padding-right: 6px;
+    overscroll-behavior: contain;
+}
+
+    .groups-list::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .groups-list::-webkit-scrollbar-thumb {
+        background: rgba(255,255,255,.15);
+        border-radius: 3px;
+    }
+
+    .groups-list::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+.groups-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.group-filter {
+    flex: 1;
+}
+
+.groups-selected-count {
+    font-size: 12px;
+    color: var(--muted);
+    white-space: nowrap;
+}
+
+.groups-empty {
+    padding: 14px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--muted);
 }
 
 .group-item {
+    position: relative;
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     gap: 12px;
@@ -380,13 +423,19 @@ body {
 
 /* ── ACTIONS ── */
 .form-actions {
-    padding: 20px 28px;
+    padding: 16px 28px;
     background: var(--surface2);
     border-top: 1px solid var(--border);
     display: flex;
     gap: 10px;
     align-items: center;
     justify-content: flex-end;
+    /* sempre visível no rodapé da janela */
+    position: sticky;
+    bottom: 0;
+    z-index: 20;
+    border-radius: 0 0 var(--radius) var(--radius);
+    box-shadow: 0 -10px 24px rgba(0,0,0,0.35);
 }
 
 .btn {
@@ -629,9 +678,9 @@ body {
     z-index: 1000;
 }
 
-.modal-overlay.hidden {
-    display: none;
-}
+    .modal-overlay.hidden {
+        display: none;
+    }
 
 .modal-box {
     background: var(--surface);
@@ -663,9 +712,9 @@ body {
     margin-bottom: 1.75rem;
 }
 
-.modal-body strong {
-    color: var(--text);
-}
+    .modal-body strong {
+        color: var(--text);
+    }
 
 .modal-actions {
     display: flex;
@@ -806,13 +855,13 @@ body {
     color: #f87171;
 }
 
-@@keyframes spin {
+@keyframes spin {
     to {
         transform: rotate(360deg);
     }
 }
 
-@@keyframes slideIn {
+@keyframes slideIn {
     from {
         opacity: 0;
         transform: translateX(30px);
