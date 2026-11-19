@@ -568,7 +568,23 @@
         });
     });
 
-    searchInput.addEventListener('input', applyFilters);
+    // Ao começar uma pesquisa, volta o filtro de status para "Todos"
+    let lastTerm = '';
+
+    function setStatusFilter(filter) {
+        statusFilter = filter;
+        statusChips.forEach(c => c.classList.toggle('is-active', c.dataset.filter === filter));
+    }
+
+    searchInput.addEventListener('input', () => {
+        const term = searchInput.value.trim();
+
+        if (term && !lastTerm && statusFilter !== 'all')
+            setStatusFilter('all');
+
+        lastTerm = term;
+        applyFilters();
+    });
     updateCount(rows.length);
 
     // ── Reactivate modal ──────────────────────────────────────────────
