@@ -62,6 +62,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped<PostgresUserStore>();
 
+builder.Services.AddScoped<SaseSyncService>();
+
 builder.Services.AddHostedService<ExpirationWorker>();
 builder.Services.AddHostedService<SyncWorker>();
 

@@ -19,6 +19,8 @@ public class IndexModel : PageModel
     private readonly PostgresUserStore _store;
     private readonly UserService _service;
     private readonly ISaseGroupCache _groupCache;
+    private readonly SaseSyncService _sync;
+    private readonly ILogger<IndexModel> _logger;
 
     [TempData]
     public string? ErrorMessage { get; set; }
@@ -33,11 +35,103 @@ public class IndexModel : PageModel
     public IReadOnlyList<SaseGroupDto> AllGroups { get; private set; } = [];
 
 
-    public IndexModel(PostgresUserStore store, UserService service, ISaseGroupCache groupCache)
+    public IndexModel(
+        PostgresUserStore store, UserService service, ISaseGroupCache groupCache,
+        SaseSyncService sync, ILogger<IndexModel> logger)
     {
         _store = store;
         _service = service;
         _groupCache = groupCache;
+        _sync = sync;
+        _logger = logger;
+    }
+
+    /// <summary>
+    /// GET /Users?handler=Orphans — lista os órfãos (no SASE, mas não ativos no SAM) para o modal de sincronização.
+    /// </summary>
+    public async Task<IActionResult> OnGetOrphans(CancellationToken ct)
+    {
+        try
+        {
+            var report = await _sync.FindOrphansAsync(ct);
+
+            return new JsonResult(new
+            {
+                orphans = report.ToRemove
+                    .OrderBy(o => o.Email, StringComparer.OrdinalIgnoreCase)
+                    .Select(o => new { id = o.Id, email = o.Email }),
+                admins = report.Admins.Count,
+                whitelisted = report.Whitelisted.Count,
+                saseTotal = report.SaseCount
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erro ao buscar usuários órfãos para sincronização manual.");
+
+            // Mensagem amigável; o detalhe técnico fica no log
+            var msg = ex is InvalidOperationException
+                ? ex.Message
+                : "Não foi possível consultar o SASE agora. Veja os logs para detalhes.";
+
+            return new JsonResult(new { error = msg }) { StatusCode = 500 };
+        }
+    }
+
+    /// <summary>
+    /// Confirmação da sincronização manual. Os órfãos são recalculados aqui:
+    /// só é removido quem estava na lista mostrada E continua órfão agora.
+    /// </summary>
+    public async Task<IActionResult> OnPostSyncOrphans(List<string>? ids)
+    {
+        var quem = User.Identity?.Name ?? "usuário desconhecido";
+        var selecionados = (ids ?? []).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        if (selecionados.Count == 0)
+        {
+            ToastMessage = "Nenhum usuário selecionado para remoção.";
+            ToastType = "error";
+            return RedirectToPage();
+        }
+
+        try
+        {
+            var report = await _sync.FindOrphansAsync();
+
+            var paraRemover = report.ToRemove
+                .Where(o => selecionados.Contains(o.Id))
+                .ToList();
+
+            var ignorados = selecionados.Count - paraRemover.Count;
+
+            _logger.LogWarning(
+                "Sincronização manual iniciada por {Quem}: {Count} órfão(s) a remover ({Ignorados} da lista original já não eram órfãos).",
+                quem, paraRemover.Count, ignorados);
+
+            var (removed, errors, failures) = await _sync.RemoveOrphansAsync(paraRemover, $"manual por {quem}");
+
+            if (errors == 0)
+            {
+                ToastMessage = $"Sincronização concluída: {removed} usuário(s) removido(s) do SASE."
+                    + (ignorados > 0 ? $" {ignorados} ignorado(s) por não serem mais órfãos." : "");
+                ToastType = "success";
+            }
+            else
+            {
+                ToastMessage = $"{removed} removido(s), {errors} falha(s):\n" + string.Join("\n", failures.Take(10).Select(f => "• " + f));
+                ToastType = "error";
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erro na sincronização manual iniciada por {Quem}.", quem);
+            ToastMessage = ex is InvalidOperationException
+                ? ex.Message
+                : "Erro ao executar a sincronização. Veja os logs para detalhes.";
+            ToastType = "error";
+        }
+
+        return RedirectToPage();
     }
 
     public async Task OnGet()

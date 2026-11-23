@@ -17,16 +17,6 @@ namespace SaseAccessManager.Worker
 
         private const bool DryRun = false; // Se False, as mudanças serão aplicadas de fato. Se True, as mudanças serão logadas mas não aplicadas.
 
-        private static readonly HashSet<string> WhitelistEmails = new(StringComparer.OrdinalIgnoreCase)
-            {
-                "marcelo.zaranza@hepta.com.br",
-                "hadson.fonseca@hepta.com.br",
-                "daniel.dsantos@agro.gov.br",
-                "adalberto.nogueira@agro.gov.br",
-                "guilherme.bernardes@ntsec.com.br",
-                "marco.sucupira@agro.gov.br"
-            };
-
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             _logger.LogInformation("Sync Worker iniciado.");
@@ -54,9 +44,9 @@ namespace SaseAccessManager.Worker
             using var scope = _provider.CreateScope();
             var store = scope.ServiceProvider.GetRequiredService<PostgresUserStore>();
             var sase = scope.ServiceProvider.GetRequiredService<ISaseClient>();
+            var sync = scope.ServiceProvider.GetRequiredService<SaseSyncService>();
 
             var dryRun = DryRun;
-            var whitelistSet = WhitelistEmails;
 
             if (dryRun)
                 _logger.LogWarning("Sync em modo DRY-RUN. Nenhum usuário será removido de fato.");
@@ -71,26 +61,14 @@ namespace SaseAccessManager.Worker
             // 2.1 Atualizar perfil (Admin/User) dos usuários locais a partir do SASE
             await SyncRoles(store, localUsers, saseUsers, dryRun);
 
-            var localPerimeterIds = localUsers
-                .Where(u => u.ST_USUARIO == UserStatus.Active &&
-                            !string.IsNullOrWhiteSpace(u.ID_USUARIO_PERIMETER))
-                .Select(u => u.ID_USUARIO_PERIMETER!)
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-            // 3. Identificar órfãos (excluindo whitelist)
-            var orphans = saseUsers
-                .Where(s => !localPerimeterIds.Contains(s.Id))
-                .ToList();
-
-            // Admins não podem ser excluídos pela API — nunca tentar
-            var admins = orphans.Where(o => o.IsAdmin).ToList();
-            orphans = orphans.Where(o => !o.IsAdmin).ToList();
-
-            var whitelisted = orphans.Where(o => whitelistSet.Contains(o.Email)).ToList();
+            // 3. Identificar órfãos (mesma regra do botão de sincronização manual)
+            var report = SaseSyncService.FindOrphans(saseUsers, localUsers);
+            var admins = report.Admins;
+            var whitelisted = report.Whitelisted;
             var toRemove = new List<SaseUserDto>();
 
 #if !DEBUG
-                toRemove = orphans.Where(o => !whitelistSet.Contains(o.Email)).ToList();
+            toRemove = report.ToRemove;
 #endif
 
             if (admins.Count > 0)
@@ -136,28 +114,14 @@ namespace SaseAccessManager.Worker
             var removed = 0;
             var errors = 0;
 
-            foreach (var orphan in toRemove)
+            if (dryRun)
             {
-                if (dryRun)
-                {
-                    _logger.LogWarning(
-                        "[DRY-RUN] Seria removido: {Email} (ID: {Id})",
-                        orphan.Email, orphan.Id);
-                    continue;
-                }
-
-                var result = await sase.DeleteUser(orphan.Id);
-
-                if (result.Success)
-                {
-                    removed++;
-                    _logger.LogInformation("Órfão removido: {Email} (ID: {Id})", orphan.Email, orphan.Id);
-                }
-                else
-                {
-                    errors++;
-                    _logger.LogError("Falha ao remover órfão {Email}: {Error}", orphan.Email, result.Error);
-                }
+                foreach (var orphan in toRemove)
+                    _logger.LogWarning("[DRY-RUN] Seria removido: {Email} (ID: {Id})", orphan.Email, orphan.Id);
+            }
+            else
+            {
+                (removed, errors, _) = await sync.RemoveOrphansAsync(toRemove, "sincronização automática");
             }
 
             if (dryRun)
