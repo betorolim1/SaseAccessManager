@@ -23,7 +23,8 @@ namespace SaseAccessManager.Worker
                 "hadson.fonseca@hepta.com.br",
                 "daniel.dsantos@agro.gov.br",
                 "adalberto.nogueira@agro.gov.br",
-                "guilherme.bernardes@ntsec.com.br"
+                "guilherme.bernardes@ntsec.com.br",
+                "marco.sucupira@agro.gov.br"
             };
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)

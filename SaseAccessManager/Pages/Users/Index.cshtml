@@ -285,7 +285,8 @@
                                                 data-email="@u.DS_EMAIL"
                                                 data-id="@u.ID_USUARIO_SASE"
                                                 data-name="@u.NM_USUARIO"
-                                                data-lastname="@u.NM_SOBRENOME">
+                                                data-lastname="@u.NM_SOBRENOME"
+                                                data-group-ids="@(string.Join("|", u.DS_GRUPO_ACESSO ?? new List<string>()))">
                                             Reativar
                                         </button>
                                     }
@@ -317,6 +318,28 @@
                         <input type="text" id="reactivateLastName" class="form-input" maxlength="100" placeholder="Sobrenome" />
                     </div>
                     <div id="reactivateNameError" class="reactivate-name-error hidden"></div>
+                </div>
+
+                <div class="modal-duration">
+                    <div class="modal-groups-label reactivate-name-label">
+                        Grupos de acesso
+                        <span id="reactivateGroupsCount" class="rg-count"></span>
+                    </div>
+                    <input type="text" id="reactivateGroupFilter" class="form-input" placeholder="Filtrar grupos…" autocomplete="off" />
+                    <div id="reactivateGroupsList" class="rg-list">
+                        <label class="rg-item is-locked">
+                            <input type="checkbox" checked disabled />
+                            <span>All Users</span>
+                            <span class="tooltip-lock-tag">padrão</span>
+                        </label>
+                        @foreach (var g in Model.AllGroups.OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase))
+                        {
+                            <label class="rg-item">
+                                <input type="checkbox" class="rg-checkbox" value="@g.Id" />
+                                <span class="rg-name">@g.Name</span>
+                            </label>
+                        }
+                    </div>
                 </div>
 
                 <div class="modal-duration">
@@ -354,6 +377,7 @@
         <input type="hidden" id="reactivateDaysField" name="durationDays" value="30" />
         <input type="hidden" id="reactivateNameField" name="name" />
         <input type="hidden" id="reactivateLastNameField" name="lastName" />
+        <input type="hidden" name="groupsProvided" value="true" />
     </form>
 
     <!-- REMOVE MODAL -->
@@ -437,7 +461,7 @@
 
 <script nonce="@HttpContext.Items["CSP-Nonce"]">
 
-    // ── Chamado modal ────────────────────────────────────────────────
+        // ── Chamado modal ────────────────────────────────────────────────
     document.querySelectorAll('.chamado-truncated').forEach(el => {
         el.addEventListener('click', () => {
             document.getElementById('chamadoModalTitle').textContent = 'Chamado';
@@ -463,10 +487,10 @@
     }
 
     // ── Remove modal ──────────────────────────────────────────────────
-    const removeModal = document.getElementById('removeModal');
-    const removeEmailEl = document.getElementById('removeEmail');
-    const removeIdField = document.getElementById('removeId');
-    const removeObs = document.getElementById('removeObs');
+    const removeModal    = document.getElementById('removeModal');
+    const removeEmailEl  = document.getElementById('removeEmail');
+    const removeIdField  = document.getElementById('removeId');
+    const removeObs      = document.getElementById('removeObs');
     const removeObsField = document.getElementById('removeObsField');
     const removeObsCount = document.getElementById('removeObsCount');
 
@@ -476,9 +500,9 @@
 
     document.querySelectorAll('.remove-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-            removeEmailEl.textContent = btn.dataset.email;
-            removeIdField.value = btn.dataset.id;
-            removeObs.value = '';
+            removeEmailEl.textContent  = btn.dataset.email;
+            removeIdField.value        = btn.dataset.id;
+            removeObs.value            = '';
             removeObsCount.textContent = '0';
             removeModal.classList.remove('hidden');
             removeObs.focus();
@@ -528,10 +552,10 @@
 
     // ── Search + filtro por status ────────────────────────────────────
     const searchInput = document.getElementById('searchInput');
-    const rows = document.querySelectorAll('tbody tr');
-    const totalCount = document.getElementById('totalCount');
+    const rows        = document.querySelectorAll('tbody tr');
+    const totalCount  = document.getElementById('totalCount');
     const statusChips = document.querySelectorAll('.status-chip');
-    let statusFilter = 'all';
+    let statusFilter  = 'all';
 
     function updateCount(visible) {
         const total = rows.length;
@@ -551,7 +575,7 @@
         const term = searchInput.value.toLowerCase().trim();
         let visible = 0;
         rows.forEach(row => {
-            const matchText = !term || searchText.get(row).includes(term);
+            const matchText   = !term || searchText.get(row).includes(term);
             const matchStatus = statusFilter === 'all' || row.classList.contains(statusFilter);
             const show = matchText && matchStatus;
             row.classList.toggle('row-hidden', !show);
@@ -588,12 +612,12 @@
     updateCount(rows.length);
 
     // ── Reactivate modal ──────────────────────────────────────────────
-    const reactivateModal = document.getElementById('reactivateModal');
-    const reactivateEmailEl = document.getElementById('reactivateEmail');
-    const reactivateIdField = document.getElementById('reactivateId');
-    const reactivateDays = document.getElementById('reactivateDays');
+    const reactivateModal     = document.getElementById('reactivateModal');
+    const reactivateEmailEl   = document.getElementById('reactivateEmail');
+    const reactivateIdField   = document.getElementById('reactivateId');
+    const reactivateDays      = document.getElementById('reactivateDays');
     const reactivateDaysField = document.getElementById('reactivateDaysField');
-    const reactivatePresets = document.querySelectorAll('#reactivatePresets .preset-btn');
+    const reactivatePresets   = document.querySelectorAll('#reactivatePresets .preset-btn');
 
     function syncReactivatePresets() {
         reactivatePresets.forEach(b =>
@@ -622,15 +646,15 @@
     });
 
     // Nome/sobrenome editáveis na reativação (o SASE recusa acentos)
-    const reactivateName = document.getElementById('reactivateName');
-    const reactivateLastName = document.getElementById('reactivateLastName');
-    const reactivateNameError = document.getElementById('reactivateNameError');
-    const nomeValidoRegex = /^[a-z '-]+$/i;
+    const reactivateName       = document.getElementById('reactivateName');
+    const reactivateLastName   = document.getElementById('reactivateLastName');
+    const reactivateNameError  = document.getElementById('reactivateNameError');
+    const nomeValidoRegex      = /^[a-z '-]+$/i;
 
     const removerAcentos = txt => txt.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
     function validarNomeReativacao() {
-        const nome = reactivateName.value.trim();
+        const nome      = reactivateName.value.trim();
         const sobrenome = reactivateLastName.value.trim();
         let erro = null;
 
@@ -646,20 +670,65 @@
     }
 
     document.getElementById('reactivateStripAccents').addEventListener('click', () => {
-        reactivateName.value = removerAcentos(reactivateName.value);
+        reactivateName.value     = removerAcentos(reactivateName.value);
         reactivateLastName.value = removerAcentos(reactivateLastName.value);
         validarNomeReativacao();
     });
 
     [reactivateName, reactivateLastName].forEach(i => i.addEventListener('input', validarNomeReativacao));
 
+    // Grupos na reativação
+    const rgList        = document.getElementById('reactivateGroupsList');
+    const rgFilter      = document.getElementById('reactivateGroupFilter');
+    const rgCount       = document.getElementById('reactivateGroupsCount');
+    const rgCheckboxes  = Array.from(rgList.querySelectorAll('.rg-checkbox'));
+    const rgItems       = rgCheckboxes.map(cb => cb.closest('.rg-item'));
+    const rgLockedItem  = rgList.querySelector('.rg-item.is-locked');
+
+    function updateRgCount() {
+        const n = rgCheckboxes.filter(cb => cb.checked).length;
+        rgCount.textContent = n === 0 ? 'só All Users' : `${n} + All Users`;
+    }
+
+    function applyRgFilter() {
+        const term = rgFilter.value.toLowerCase().trim();
+        rgItems.forEach(item => {
+            const name = item.querySelector('.rg-name').textContent.toLowerCase();
+            item.classList.toggle('d-none', !!term && !name.includes(term));
+        });
+    }
+
+    function loadUserGroups(ids) {
+        rgCheckboxes.forEach(cb => { cb.checked = ids.includes(cb.value); });
+
+        // Marcados primeiro, depois ordem alfabética
+        const sorted = rgItems.slice().sort((a, b) => {
+            const ca = a.querySelector('.rg-checkbox').checked;
+            const cb = b.querySelector('.rg-checkbox').checked;
+            if (ca !== cb) return ca ? -1 : 1;
+            return a.textContent.trim().localeCompare(b.textContent.trim(), 'pt-BR');
+        });
+        rgList.appendChild(rgLockedItem);
+        sorted.forEach(item => rgList.appendChild(item));
+        rgList.scrollTop = 0;
+
+        rgFilter.value = '';
+        applyRgFilter();
+        updateRgCount();
+    }
+
+    rgCheckboxes.forEach(cb => cb.addEventListener('change', updateRgCount));
+    rgFilter.addEventListener('input', applyRgFilter);
+    rgFilter.addEventListener('keydown', e => { if (e.key === 'Enter') e.preventDefault(); });
+
     document.querySelectorAll('.reactivate-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             reactivateEmailEl.textContent = btn.dataset.email;
-            reactivateIdField.value = btn.dataset.id;
-            reactivateName.value = btn.dataset.name || '';
-            reactivateLastName.value = btn.dataset.lastname || '';
-            reactivateDays.value = '30';
+            reactivateIdField.value       = btn.dataset.id;
+            reactivateName.value          = btn.dataset.name || '';
+            reactivateLastName.value      = btn.dataset.lastname || '';
+            reactivateDays.value          = '30';
+            loadUserGroups((btn.dataset.groupIds || '').split('|').filter(Boolean));
             syncReactivatePresets();
             validarNomeReativacao();
             reactivateModal.classList.remove('hidden');
@@ -677,24 +746,36 @@
         }
 
         reactivateDaysField.value = reactivateDays.value;
-        document.getElementById('reactivateNameField').value = reactivateName.value.trim();
+        document.getElementById('reactivateNameField').value     = reactivateName.value.trim();
         document.getElementById('reactivateLastNameField').value = reactivateLastName.value.trim();
+
+        // Grupos escolhidos: um hidden por grupo
+        const form = document.getElementById('reactivateForm');
+        form.querySelectorAll('input[name="groups"]').forEach(i => i.remove());
+        rgCheckboxes.filter(cb => cb.checked).forEach(cb => {
+            const input = document.createElement('input');
+            input.type  = 'hidden';
+            input.name  = 'groups';
+            input.value = cb.value;
+            form.appendChild(input);
+        });
+
         showLoading("Reativando usuário...");
         document.getElementById('reactivateForm').submit();
     });
 
-    // ── Logs modal ───────────────────────────────────────────────────
-    const logsModal = document.getElementById('logsModal');
+        // ── Logs modal ───────────────────────────────────────────────────
+    const logsModal     = document.getElementById('logsModal');
     const logsContainer = document.getElementById('logsContainer');
-    const logsSearch = document.getElementById('logsSearch');
+    const logsSearch    = document.getElementById('logsSearch');
     let allLogs = [];
 
     function levelClass(level) {
         switch (level) {
-            case 'Warning': return 'log-warn';
-            case 'Error': return 'log-error';
+            case 'Warning':  return 'log-warn';
+            case 'Error':    return 'log-error';
             case 'Critical': return 'log-error';
-            default: return 'log-info';
+            default:         return 'log-info';
         }
     }
 
@@ -702,8 +783,8 @@
         const term = filter.toLowerCase();
         const filtered = term
             ? allLogs.filter(l => l.message.toLowerCase().includes(term)
-                || l.category.toLowerCase().includes(term)
-                || l.level.toLowerCase().includes(term))
+                               || l.category.toLowerCase().includes(term)
+                               || l.level.toLowerCase().includes(term))
             : allLogs;
 
         while (logsContainer.firstChild)
@@ -783,8 +864,8 @@
 
     // ── Tooltip de grupos: um só elemento, montado ao passar o mouse ──
     const groupsTooltip = document.getElementById('groupsTooltip');
-    const gridBody = document.querySelector('tbody');
-    const gridScroll = document.querySelector('.table-scroll');
+    const gridBody      = document.querySelector('tbody');
+    const gridScroll    = document.querySelector('.table-scroll');
 
     function buildGroupsTooltip(names) {
         while (groupsTooltip.firstChild) groupsTooltip.removeChild(groupsTooltip.firstChild);
@@ -827,7 +908,7 @@
         const tipW = groupsTooltip.offsetWidth;
         const above = r.top - tipH - 8;
 
-        groupsTooltip.style.top = (above > 8 ? above : r.bottom + 8) + 'px';
+        groupsTooltip.style.top  = (above > 8 ? above : r.bottom + 8) + 'px';
         groupsTooltip.style.left = Math.min(
             Math.max(8, r.left + r.width / 2 - tipW / 2),
             window.innerWidth - tipW - 8) + 'px';

@@ -79,9 +79,34 @@ public class IndexModel : PageModel
         );
     }
 
-    public async Task<IActionResult> OnPostReactivate(Guid id, int durationDays = 30, string? name = null, string? lastName = null)
+    public async Task<IActionResult> OnPostReactivate(
+        Guid id, int durationDays = 30, string? name = null, string? lastName = null,
+        List<string>? groups = null, bool groupsProvided = false)
     {
-        var result = await _service.Reactivate(id, durationDays, name, lastName);
+        List<string>? selectedGroups = null;
+
+        if (groupsProvided)
+        {
+            // Só aceita IDs de grupos que existem no SASE
+            var validIds = (await _groupCache.GetAsync())
+                .Select(g => g.Id)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            // Sem a lista de grupos do SASE não dá para validar: não reativa sem grupos por engano
+            if (validIds.Count == 0)
+            {
+                ToastMessage = "Não foi possível carregar os grupos do SASE. Tente novamente em instantes.";
+                ToastType = "error";
+                return RedirectToPage();
+            }
+
+            selectedGroups = (groups ?? [])
+                .Where(validIds.Contains)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        var result = await _service.Reactivate(id, durationDays, name, lastName, selectedGroups);
 
         if (!result.Success)
         {

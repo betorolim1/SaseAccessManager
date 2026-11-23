@@ -323,7 +323,8 @@ namespace SaseAccessManager.Services
             new(@"^[A-Za-z '\-]+$", System.Text.RegularExpressions.RegexOptions.Compiled);
 
         public async Task<OperationResult<TemporarySaseUser>> Reactivate(
-            Guid id, int durationDays, string? name = null, string? lastName = null)
+            Guid id, int durationDays, string? name = null, string? lastName = null,
+            List<string>? accessGroups = null)
         {
             var user = await _store.GetById(id);
 
@@ -352,6 +353,16 @@ namespace SaseAccessManager.Services
                 // Só é gravado no banco se a reativação no SASE der certo (Update no final)
                 user.NM_USUARIO = nome;
                 user.NM_SOBRENOME = sobrenome;
+            }
+
+            // Grupos escolhidos no modal (null = mantém os grupos anteriores)
+            if (accessGroups is not null)
+            {
+                user.DS_GRUPO_ACESSO = accessGroups
+                    .Where(g => !string.IsNullOrWhiteSpace(g) && g != "All Users")
+                    .Select(g => g.Trim())
+                    .Distinct()
+                    .ToList();
             }
 
             // Garante que não existe outro registro ativo com o mesmo email
